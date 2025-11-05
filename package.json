@@ -5,27 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel dev",
-    "dev:portal": "pnpm --filter web-terminal-portal dev",
-    "dev:service": "pnpm --filter web-terminal-service dev",
-    "build": "pnpm --parallel build",
-    "build:portal": "pnpm --filter web-terminal-portal build",
-    "build:service": "pnpm --filter web-terminal-service build",
-    "start": "pnpm --parallel start",
-    "start:portal": "pnpm --filter web-terminal-portal start",
-    "start:service": "pnpm --filter web-terminal-service start",
-    "lint": "pnpm --parallel lint",
-    "lint:portal": "pnpm --filter web-terminal-portal lint",
-    "lint:service": "pnpm --filter web-terminal-service lint",
-    "test": "pnpm --parallel test",
-    "install:all": "pnpm install",
-    "clean": "pnpm --parallel clean",
-    "clean:portal": "pnpm --filter web-terminal-portal clean",
-    "clean:service": "pnpm --filter web-terminal-service clean"
-  },
-  "devDependencies": {
-    "@types/node": "^20.8.0",
-    "typescript": "^5.2.0"
+    "lint": "pnpm --parallel lint"
   },
   "engines": {
     "pnpm": ">=8.0.0",

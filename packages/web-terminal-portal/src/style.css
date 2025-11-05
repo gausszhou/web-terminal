@@ -64,20 +64,3 @@ body {
     height: calc(100svh - 150px);
     height: calc(100vh - 150px);
 }
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .terminal-container {
-        margin: 0 10px;
-    }
-    
-    .terminal-header {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    #terminal {
-        height: calc(100svh - 200px);
-        height: calc(100vh - 200px);
-    }
-}
