@@ -1,0 +1,31 @@
+{
+  "name": "web-terminal-service",
+  "version": "1.0.0",
+  "description": "Web Terminal 后端服务",
+  "type": "module",
+  "main": "src/server.mjs",
+  "scripts": {
+    "dev": "nodemon src/server.mjs",
+    "start": "node src/server.mjs",
+    "build": "echo 'No build step required for Node.js service'",
+    "lint": "eslint src/**/*.mjs"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-pty": "^1.0.0",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "eslint": "^8.52.0"
+  },
+  "keywords": [
+    "web-terminal",
+    "terminal",
+    "express",
+    "socket.io",
+    "node-pty"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Terminal Portal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            font-family: 'Courier New', monospace;
+            color: #ffffff;
+        }
+
+        .instructions {
+            margin-bottom: 20px;
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .terminal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            border: 1px solid #333;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .terminal-header {
+            background-color: #2d2d2d;
+            padding: 10px 15px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .terminal-title {
+            font-weight: bold;
+            color: #cccccc;
+        }
+
+        .terminal-status-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .terminal-status {
+            color: #4CAF50;
+            font-size: 12px;
+        }
+
+        .terminal-latency {
+            color: #888;
+            font-size: 12px;
+        }
+
+        #terminal {
+            padding: 10px;
+            height: calc(100svh - 150px);
+            height: calc(100vh - 150px);
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        提示：这是一个基于浏览器的终端模拟器，支持基本的命令行操作
+    </div>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-title">Web Terminal Portal</div>
+            <div class="terminal-status-container">
+                <div class="terminal-status" id="status">连接中...</div>
+                <div class="terminal-latency" id="latency">延迟：...ms</div>
+            </div>
+        </div>
+        <div id="terminal"></div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

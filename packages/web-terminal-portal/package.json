@@ -1,0 +1,28 @@
+{
+  "name": "web-terminal-portal",
+  "version": "1.0.0",
+  "description": "Web Terminal 前端门户",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite preview --port 3001"
+  },
+  "dependencies": {
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "vite": "^4.5.0"
+  },
+  "keywords": [
+    "web-terminal",
+    "terminal",
+    "xterm",
+    "frontend"
+  ],
+  "author": "",
+  "license": "MIT"
+}

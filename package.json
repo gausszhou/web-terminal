@@ -1,0 +1,46 @@
+{
+  "name": "web-terminal-monorepo",
+  "version": "1.0.0",
+  "description": "Web Terminal Monorepo - 包含前端门户和后端服务",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "dev:portal": "pnpm --filter web-terminal-portal dev",
+    "dev:service": "pnpm --filter web-terminal-service dev",
+    "build": "pnpm --parallel build",
+    "build:portal": "pnpm --filter web-terminal-portal build",
+    "build:service": "pnpm --filter web-terminal-service build",
+    "start": "pnpm --parallel start",
+    "start:portal": "pnpm --filter web-terminal-portal start",
+    "start:service": "pnpm --filter web-terminal-service start",
+    "lint": "pnpm --parallel lint",
+    "lint:portal": "pnpm --filter web-terminal-portal lint",
+    "lint:service": "pnpm --filter web-terminal-service lint",
+    "test": "pnpm --parallel test",
+    "install:all": "pnpm install",
+    "clean": "pnpm --parallel clean",
+    "clean:portal": "pnpm --filter web-terminal-portal clean",
+    "clean:service": "pnpm --filter web-terminal-service clean"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.0"
+  },
+  "engines": {
+    "pnpm": ">=8.0.0",
+    "node": ">=18.0.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "keywords": [
+    "monorepo",
+    "web-terminal",
+    "terminal",
+    "express",
+    "socket.io"
+  ],
+  "author": "",
+  "license": "MIT"
+}

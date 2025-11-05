@@ -1,0 +1,83 @@
+/* 导入xterm.js样式 */
+@import 'xterm/css/xterm.css';
+
+/* 自定义样式 */
+body {
+    margin: 0;
+    padding: 20px;
+    background-color: #1e1e1e;
+    font-family: 'Courier New', monospace;
+    color: #ffffff;
+}
+
+.instructions {
+    margin-bottom: 20px;
+    color: #888;
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.terminal-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    border: 1px solid #333;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.terminal-header {
+    background-color: #2d2d2d;
+    padding: 10px 15px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.terminal-title {
+    font-weight: bold;
+    color: #cccccc;
+}
+
+.terminal-status-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.terminal-status {
+    color: #4CAF50;
+    font-size: 12px;
+}
+
+.terminal-latency {
+    color: #888;
+    font-size: 12px;
+}
+
+#terminal {
+    padding: 10px;
+    height: calc(100svh - 150px);
+    height: calc(100vh - 150px);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .terminal-container {
+        margin: 0 10px;
+    }
+    
+    .terminal-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    #terminal {
+        height: calc(100svh - 200px);
+        height: calc(100vh - 200px);
+    }
+}
