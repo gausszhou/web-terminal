@@ -4,8 +4,8 @@ export default defineConfig({
   server: {
     port: 3001,
     proxy: {
-      '/socket.io': {
-        target: 'http://localhost:3000',
+      '/terminal': {
+        target: 'ws://localhost:3000',
         changeOrigin: true,
         ws: true
       }

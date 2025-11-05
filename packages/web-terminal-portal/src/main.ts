@@ -1,6 +1,6 @@
+import './style.css'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
-import './style.css'
 import { FrameCodec, FrameType } from '@web-terminal/common'
 
 const termContainer = document.getElementById('terminal') as HTMLElement
@@ -28,7 +28,7 @@ setTimeout(() => {
     fitAddon.fit()
 }, 100)
 
-const ws = new WebSocket('ws://localhost:3000/terminal')
+const ws = new WebSocket('/terminal')
 ws.binaryType = "arraybuffer";
 let lastKeepAliveTimestamp = Date.now()
 

@@ -5,6 +5,8 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "sh shells/build.sh",
+    "start": "pnpm build && pnpm --filter @web-terminal/service start",
     "lint": "pnpm --parallel lint"
   },
   "engines": {

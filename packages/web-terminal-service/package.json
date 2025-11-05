@@ -5,8 +5,8 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "build": "tsc && tsc-alias",
-    "start": "tsc && tsc-alias && node dist/index.js",
+    "build": "pnpm --package=typescript dlx tsc",
+    "start": "pnpm build && node dist/index.js",
     "dev": "tsx src/index.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"

@@ -12,6 +12,8 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "declarationDir": "./dist",
     "sourceMap": true,
     "resolveJsonModule": true
   },

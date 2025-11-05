@@ -1,22 +1,26 @@
 import express from "express";
 import http from "http";
-
+import type { Express } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { FrameCodec, FrameType } from "@web-terminal/common";
 import { WebSocketServer } from "ws";
-import { createTerminal } from "./pty";
+import { createTerminal } from "./pty.js";
 
 // 获取当前文件的目录路径（ESM替代__dirname）
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
+
+const app: Express = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+app.use(express.static(path.join(__dirname, "../../web-terminal-portal/dist")));
+
+// 根路径重定向到终端页面
 app.get("/", (req, res) => {
-  res.send("Web Terminal 服务运行中");
+  res.sendFile(path.join(__dirname, "../../web-terminal-portal/dist/index.html"));
 });
 
 // 健康检查端点
@@ -31,7 +35,7 @@ wss.on("connection", (ws, req) => {
   const terminal = createTerminal();
 
   // 监听终端输出并发送给客户端
-  terminal.onData((data) => {
+  terminal.onData((data: string | Buffer) => {
     ws.send(FrameCodec.encode(FrameType.DATA, data));
   });
 
