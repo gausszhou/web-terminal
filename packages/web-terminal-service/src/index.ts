@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { FrameCodec, FrameType } from "@web-terminal/common";
 import { WebSocketServer } from "ws";
-import { createTerminal } from "./pty.js";
+import pty from "./mock-pty.js";
 
 // 获取当前文件的目录路径（ESM替代__dirname）
 const __filename = fileURLToPath(import.meta.url);
@@ -32,7 +32,7 @@ app.get("/health", (req, res) => {
 wss.on("connection", (ws, req) => {
   console.log("用户连接:", req.socket.remoteAddress);  
   // 创建伪终端
-  const terminal = createTerminal();
+  const terminal = pty.spawn("bash", [], { cwd: '/root' });
 
   // 监听终端输出并发送给客户端
   terminal.onData((data: string | Buffer) => {

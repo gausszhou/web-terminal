@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "build": "sh shells/build.sh",
-    "start": "pnpm build && pnpm --filter @web-terminal/service start",
+    "start": "pnpm --filter @web-terminal/service start",
     "lint": "pnpm --parallel lint",
     "clean": "pnpm --parallel clean && rm -rf packages/*/node_modules"
   },

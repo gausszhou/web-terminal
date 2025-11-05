@@ -69,9 +69,10 @@ setInterval(() => {
 }, 5 * 1000)
 
 // 处理粘贴事件
-document.addEventListener('paste', (event) => {
+termContainer.addEventListener('paste', (event) => {
     if (event.clipboardData) {
         const text = event.clipboardData.getData('text')
+        console.log(text);
         term.write(text)
         ws.send(FrameCodec.encode(FrameType.DATA, text))
     }
