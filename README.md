@@ -1,22 +1,32 @@
 # Web Terminal Monorepo
 
-基于 pnpm 管理的 monorepo 项目，包含前端门户和后端服务。
+基于 pnpm 管理的 monorepo 项目，包含前端门户、后端服务和公共库。
 
 ## 项目结构
 
 ```
 web-terminal-monorepo/
 ├── packages/
+│   ├── web-terminal-common/     # 公共库 (二进制数据帧格式和编解码工具)
+│   │   ├── src/
+│   │   ├── tests/
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── vite.config.ts
 │   ├── web-terminal-portal/     # 前端门户项目
 │   │   ├── src/
 │   │   ├── package.json
+│   │   ├── tsconfig.json
 │   │   ├── vite.config.js
 │   │   └── index.html
 │   └── web-terminal-service/    # 后端服务项目
 │       ├── src/
-│       └── package.json
-├── pnpm-workspace.yaml          # pnpm 工作空间配置
-├── package.json                 # 根目录配置
+│       ├── package.json
+│       └── tsconfig.json
+├── shells/
+│   └── build.sh                # 构建脚本
+├── pnpm-workspace.yaml         # pnpm 工作空间配置
+├── package.json                # 根目录配置
 └── README.md
 ```
 
@@ -31,21 +41,15 @@ web-terminal-monorepo/
 
 ```bash
 # 安装所有依赖
-pnpm install:all
-
-# 或者分别安装
 pnpm install
 ```
 
 ### 开发模式
 
 ```bash
-# 同时启动前端和后端服务
-pnpm dev
-
 # 分别启动服务
-pnpm dev:portal    # 启动前端 (端口 3001)
-pnpm dev:service   # 启动后端 (端口 3000)
+pnpm dev:portal    # 启动前端门户 (端口由Vite自动分配)
+pnpm dev:service   # 启动后端服务 (端口由服务配置决定)
 ```
 
 ### 生产构建
@@ -54,42 +58,57 @@ pnpm dev:service   # 启动后端 (端口 3000)
 # 构建所有项目
 pnpm build
 
-# 分别构建
-pnpm build:portal
-pnpm build:service
+# 构建脚本会依次构建：
+# 1. web-terminal-common (公共库)
+# 2. web-terminal-portal (前端门户)
+# 3. web-terminal-service (后端服务)
 ```
 
 ### 启动服务
 
 ```bash
-# 启动所有服务
+# 启动后端服务
 pnpm start
+```
 
-# 分别启动
-pnpm start:portal
-pnpm start:service
+### 其他命令
+
+```bash
+# 代码检查
+pnpm lint
+
+# 清理构建产物
+pnpm clean
 ```
 
 ## 项目说明
 
-### web-terminal-portal (前端门户)
+### @web-terminal/portal (前端门户)
 
-- **技术栈**: Vite + xterm.js + Socket.IO Client
-- **端口**: 3001
+- **技术栈**: Vue 3 + Vite + TypeScript + xterm.js
+- **端口**: 由Vite自动分配
 - **功能**: 提供 Web 终端界面，支持终端操作和实时通信
+- **依赖**: 使用 `@web-terminal/common` 公共库进行数据编解码
 
-### web-terminal-service (后端服务)
+### @web-terminal/service (后端服务)
 
-- **技术栈**: Express + Socket.IO + node-pty
-- **端口**: 3000
-- **功能**: 提供终端服务，处理 Socket.IO 连接和伪终端操作
+- **技术栈**: Express + TypeScript + WebSocket (ws)
+- **端口**: 由服务配置决定
+- **功能**: 提供终端服务，处理 WebSocket 连接和终端操作
+- **依赖**: 使用 `@web-terminal/common` 公共库进行数据编解码
+
+### @web-terminal/common (公共库)
+
+- **功能**: 二进制数据帧格式和编码/解码工具
+- **用途**: 为前端和后端提供统一的数据通信格式
+- **技术栈**: TypeScript + Vite + Vitest
 
 ## 开发指南
 
 ### 添加新包
 
 1. 在 `packages/` 目录下创建新包
-2. 在新包中创建 `package.json`
+2. 在新包中创建 `package.json`，确保包名以 `@web-terminal/` 开头
 3. 根目录运行 `pnpm install` 安装依赖
 
 ### 包间依赖
@@ -99,19 +118,22 @@ pnpm start:service
 ```json
 {
   "dependencies": {
-    "web-terminal-service": "workspace:*"
+    "@web-terminal/common": "workspace:*"
   }
 }
 ```
 
+### 构建顺序
+
+项目构建有依赖关系，构建脚本 `shells/build.sh` 会按以下顺序执行：
+
+1. `web-terminal-common` (公共库，其他包依赖此包)
+2. `web-terminal-portal` (前端门户)
+3. `web-terminal-service` (后端服务)
+
 ### 环境变量
 
-后端服务支持以下环境变量：
-
-- `PORT`: 服务端口 (默认: 3000)
-- `HOST`: 服务主机 (默认: localhost)
-- `NODE_ENV`: 环境模式 (默认: development)
-- `LOG_LEVEL`: 日志级别 (默认: info)
+各项目支持的环境变量请参考各自的配置文件。建议使用 `.env.example` 作为模板创建本地环境变量文件。
 
 ## 部署说明
 
