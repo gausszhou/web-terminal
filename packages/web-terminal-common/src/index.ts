@@ -71,30 +71,30 @@ export class FrameCodec {
     return frame;
   }
 
-  static decode(buf: Uint8Array): Frame {
+  static decode(buf: ArrayBuffer): Frame {
     // 检查数据长度是否足够
-    if (buf.length < Frame.HeaderSize) {
+    if (buf.byteLength < Frame.HeaderSize) {
       throw new Error(
-        `Data too short: expected at least ${Frame.HeaderSize} bytes, got ${buf.length}`
+        `Data too short: expected at least ${Frame.HeaderSize} bytes, got ${buf.byteLength}`
       );
     }
 
-    const buffer = new Uint8Array(buf);
-    const view = new DataView(buffer.buffer);
+    const u8 = new Uint8Array(buf);
+    const view = new DataView(u8.buffer);
     const type = view.getUint8(0);
     const payloadLength = view.getUint8(1);
     const identifier = view.getUint32(2, true);
 
     // 检查payload长度是否有效
-    if (buf.length < Frame.HeaderSize + payloadLength) {
+    if (buf.byteLength < Frame.HeaderSize + payloadLength) {
       throw new Error(
         `Incomplete data: expected ${
           Frame.HeaderSize + payloadLength
-        } bytes, got ${buf.length}`
+        } bytes, got ${buf.byteLength}`
       );
     }
 
-    const payload = buffer.slice(
+    const payload = u8.slice(
       Frame.HeaderSize,
       Frame.HeaderSize + payloadLength
     );
@@ -130,20 +130,5 @@ export class FrameCodec {
 
   static randomIdentifier(): number {
     return Math.floor(Math.random() * 0xfffffff);
-  }
-
-  static validate() {
-    const time = Date.now();
-    const encodedFrame = FrameCodec.encode(
-      FrameType.PING,
-      FrameCodec.randomIdentifier(),
-      time
-    );
-    const decodedFrame = FrameCodec.decode(encodedFrame.toBuffer());
-    return (
-      decodedFrame.type === FrameType.PING &&
-      decodedFrame.payloadLength === 8 &&
-      FrameCodec.buffer2number(decodedFrame.payload) === time
-    );
   }
 }

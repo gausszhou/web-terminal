@@ -19,8 +19,6 @@ import { Frame, FrameCodec, FrameType } from "@web-terminal/common";
 import { WebSocketConnection } from "./WebSocketConnection";
 import { WebSocketDataChannel } from "./WebSocketDataChannel";
 
-console.log(FrameCodec.validate());
-
 const terminalRef = ref<HTMLElement>();
 const statusText = ref("连接中...");
 const latencyText = ref("延迟：...ms");

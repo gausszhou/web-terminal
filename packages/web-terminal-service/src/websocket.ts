@@ -11,7 +11,7 @@ export function useWebSocket(server: http.Server) {
   wss.on("connection", (ws: WebSocket, req) => {
     console.log("用户连接:", req.socket.remoteAddress);
     // 监听客户端发送的终端输入
-    ws.on("message", (message: Uint8Array) => {
+    ws.on("message", (message: ArrayBuffer) => {
       const frame = FrameCodec.decode(message);
       console.log("收到帧:", frame);
       const terminal = connectionManage.getTerminal(frame.identifier, ws);
