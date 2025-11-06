@@ -9,28 +9,11 @@
         html {
             background-color: #1e1e1e;
         }
-        #app {
-            display: none;
-        }
     </style>
 </head>
 
 <body>
-    <div id="app">
-        <div class="instructions">
-            提示：这是一个基于浏览器的终端模拟器，支持基本的命令行操作
-        </div>
-        <div class="terminal-container">
-            <div class="terminal-header">
-                <div class="terminal-title">Web Terminal</div>
-                <div class="terminal-status-container">
-                    <div class="terminal-status" id="status">连接中...</div>
-                    <div class="terminal-latency" id="latency">延迟：...ms</div>
-                </div>
-            </div>
-            <div id="terminal"></div>
-        </div>
-    </div>
+    <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
 </body>
 
