@@ -6,6 +6,8 @@
   "private": true,
   "scripts": {
     "build": "sh shells/build.sh",
+    "dev:portal": "pnpm --filter @web-terminal/portal dev",
+    "dev:service": "pnpm --filter @web-terminal/service dev",
     "start": "pnpm --filter @web-terminal/service start",
     "lint": "pnpm --parallel lint",
     "clean": "pnpm --parallel clean && rm -rf packages/*/node_modules"

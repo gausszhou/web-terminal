@@ -1,6 +1,6 @@
 // mock-pty.ts - 优化后的实现
 import { EventEmitter } from 'events';
-import { IPty, IPtyForkOptions, IPtyOpenOptions } from './types';
+import { IPty, IPtyForkOptions } from './types';
 
 export class MockPty extends EventEmitter implements IPty {
   public readonly pid: number;
@@ -290,25 +290,3 @@ export class MockPty extends EventEmitter implements IPty {
     return this._isDestroyed;
   }
 }
-
-// 工厂函数
-export function spawn(command: string, args: string[], options: IPtyForkOptions = {}): MockPty {
-  return new MockPty(command, args, options);
-}
-
-export function fork(file: string, args: string[], options: IPtyForkOptions = {}): MockPty {
-  return new MockPty(process.execPath, [file, ...args], options);
-}
-
-export function createTerminal(options: IPtyOpenOptions = {}): MockPty {
-  return new MockPty('/bin/sh', [], options);
-}
-
-// 主导出
-export const mockpty = {
-  spawn,
-  fork,
-  createTerminal,
-};
-
-export default mockpty;

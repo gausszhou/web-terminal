@@ -12,115 +12,134 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { Terminal } from 'xterm'
-import { FitAddon } from 'xterm-addon-fit'
-import { FrameCodec, FrameType } from '@web-terminal/common'
+import { ref, onMounted, onUnmounted } from "vue";
+import { Terminal } from "xterm";
+import { FitAddon } from "xterm-addon-fit";
+import { Frame, FrameCodec, FrameType } from "@web-terminal/common";
+import { WebSocketConnection } from "./WebSocketConnection";
+import { WebSocketDataChannel } from "./WebSocketDataChannel";
 
-const terminalRef = ref<HTMLElement>()
-const statusText = ref('连接中...')
-const latencyText = ref('延迟：...ms')
-const statusClass = ref('')
+console.log(FrameCodec.validate());
 
-let term: Terminal
-let fitAddon: FitAddon
-let ws: WebSocket
-let lastKeepAliveTimestamp = Date.now()
+const terminalRef = ref<HTMLElement>();
+const statusText = ref("连接中...");
+const latencyText = ref("延迟：...ms");
+const statusClass = ref("");
+
+let term: Terminal;
+let fitAddon: FitAddon;
+let connection: WebSocketConnection;
+let channel: WebSocketDataChannel;
+
+// ====== 终端事件处理 ======
+const onData = (data: string) => {
+  channel.sendData(data);
+};
+
+const onPaste = (event: ClipboardEvent) => {
+  if (event.clipboardData) {
+    const text = event.clipboardData.getData("text");
+    console.log(text);
+    term.write(text);
+  }
+};
+
+const onResize = () => {
+  fitAddon.fit();
+};
 
 const initTerminal = () => {
   term = new Terminal({
     theme: {
-      background: '#1e1e1e',
-      foreground: '#ffffff',
-      cursor: '#ffffff',
+      background: "#1e1e1e",
+      foreground: "#ffffff",
+      cursor: "#ffffff",
     },
     fontSize: 14,
     fontFamily: 'Consolas, "Courier New", monospace',
-    cursorBlink: true
-  })
+    cursorBlink: true,
+  });
 
-  fitAddon = new FitAddon()
-  term.loadAddon(fitAddon)
+  fitAddon = new FitAddon();
+  term.loadAddon(fitAddon);
+
+  // 监听终端输入
+  term.onData(onData);
   
   if (terminalRef.value) {
-    term.open(terminalRef.value)
+    terminalRef.value.addEventListener("paste", onPaste);
+    term.open(terminalRef.value);
     setTimeout(() => {
-      fitAddon.fit()
-    }, 100)
+      fitAddon.fit();
+    }, 100);
   }
+  window.addEventListener("resize", onResize);
+};
+
+const destroyTerminal = () => {
+  if (term) {
+    term.dispose();
+  }
+  if (terminalRef.value) {
+    terminalRef.value.removeEventListener("paste", onPaste);
+  }
+  window.removeEventListener("resize", onResize);
+};
+
+// ====== WebSocket 事件处理 ======
+
+const onChannelOpen = () => {
+  statusText.value = "已连接";
+  statusClass.value = "connected";
+  channel.sendData('');
+};
+
+const onChannelPong = () => {
+  latencyText.value = `延迟: ${connection.rtt}ms`;
 }
+
+const onChannelClose = () => {
+  statusText.value = "已断开";
+  statusClass.value = "disconnected";
+};
+
+const onChannelMessage = (event: Event) => {
+  const frame = (event as MessageEvent).data as Frame;
+  if (frame.type === FrameType.DATA) {
+    console.log("收到DATA帧:", frame);
+    term.write(new TextDecoder().decode(frame.payload));
+  }
+};
 
 const initWebSocket = () => {
-  ws = new WebSocket('/terminal')
-  ws.binaryType = "arraybuffer"
+  connection = new WebSocketConnection("/terminal");
+  channel = connection.createDataChannel("default");
+  connection.addEventListener("pong", onChannelPong);
+  channel.addEventListener("open", onChannelOpen);
+  channel.addEventListener("close", onChannelClose);
+  channel.addEventListener("message", onChannelMessage);
+};
 
-  ws.onopen = () => {
-    statusText.value = '已连接'
-    statusClass.value = 'connected'
-    lastKeepAliveTimestamp = Date.now()
-    ws.send(FrameCodec.encode(FrameType.PING, FrameCodec.number2buffer(lastKeepAliveTimestamp)))
+const destroyWebSocket = () => {
+  if (connection) {
+    connection.close();
   }
-
-  ws.onclose = () => {
-    statusText.value = '已断开'
-    statusClass.value = 'disconnected'
+  if (channel) {
+    channel.removeEventListener("open", onChannelOpen);
+    channel.removeEventListener("close", onChannelClose);
+    channel.removeEventListener("message", onChannelMessage);
   }
-
-  ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
-    const frame = FrameCodec.decode(new Uint8Array(event.data))
-    if (frame.type === FrameType.DATA) {
-      console.log("收到DATA帧:", new TextDecoder().decode(frame.payload))
-      term.write(new TextDecoder().decode(frame.payload))
-    } else if (frame.type === FrameType.PONG) {
-      console.log("收到PONG帧:", FrameCodec.buffer2number(frame.payload))
-      const latency = Date.now() - FrameCodec.buffer2number(frame.payload)
-      latencyText.value = `延迟: ${latency}ms`
-    }
-  }
-}
-
-const fitTerminal = () => {
-    fitAddon.fit()
-  }
-
-const setupEventListeners = () => {
-  // 监听终端输入
-  term.onData((data) => {
-    ws.send(FrameCodec.encode(FrameType.DATA, data))
-  })
-
-  // 处理粘贴事件
-  if (terminalRef.value) {
-    terminalRef.value.addEventListener('paste', (event) => {
-      if (event.clipboardData) {
-        const text = event.clipboardData.getData('text')
-        console.log(text)
-        term.write(text)
-        ws.send(FrameCodec.encode(FrameType.DATA, text))
-      }
-    })
-  }
-
-  window.addEventListener('resize', fitTerminal)
-}
+};
 
 onMounted(() => {
-  initTerminal()
-  initWebSocket()
-  setupEventListeners()
-  onUnmounted(() => {
-    if (ws) {
-      ws.close()
-    }
-    if (term) {
-      term.dispose()
-    }
-  })
-})
+  initTerminal();
+  initWebSocket();
+});
 
 onUnmounted(() => {
-  window.removeEventListener('resize', fitTerminal)
-})
+  destroyTerminal();
+  destroyWebSocket();
+});
 </script>
 
 <style scoped>
@@ -161,7 +180,7 @@ onUnmounted(() => {
 }
 
 .terminal-status.connected {
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .terminal-status.disconnected {
@@ -172,6 +191,4 @@ onUnmounted(() => {
   color: #888;
   font-size: 12px;
 }
-
-
 </style>
