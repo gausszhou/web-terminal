@@ -33,4 +33,20 @@ export abstract class WebSocketCommon extends EventTarget {
   get bufferedAmount(): number {
     return this.ws.bufferedAmount;
   }
+
+  get onopen(): ((this: WebSocket, ev: Event) => any) | null {
+    return this.ws.onopen;
+  }
+
+  get onclose(): ((this: WebSocket, ev: CloseEvent) => any) | null {
+    return this.ws.onclose;
+  }
+
+  get onerror(): ((this: WebSocket, ev: Event) => any) | null {
+    return this.ws.onerror;
+  }
+
+  get onmessage(): ((this: WebSocket, ev: MessageEvent) => any) | null {
+    return this.ws.onmessage;
+  }
 }

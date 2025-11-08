@@ -1,9 +1,10 @@
+import { describe, it, expect } from 'vitest';
 import { Frame, FrameCodec, FrameType } from "@web-terminal/common";
 
 describe("Frame", () => {
   describe("constructor", () => {
     it("should create a frame with correct properties", () => {
-      const type = FrameType.DATA;
+      const type = FrameType.TERMINAL_DATA;
       const identifier = 12345;
       const payload = new Uint8Array([1, 2, 3, 4, 5]);
       
@@ -35,7 +36,7 @@ describe("Frame", () => {
       expect(buffer.byteLength).toBe(Frame.HeaderSize + payload.byteLength);
       
       // 验证头部数据
-      const view = new DataView(buffer.buffer);
+      const view = new DataView(buffer);
       expect(view.getUint8(0)).toBe(type);
       expect(view.getUint8(1)).toBe(payload.byteLength);
       expect(view.getUint32(2, true)).toBe(identifier);
@@ -51,7 +52,7 @@ describe("Frame", () => {
       
       expect(buffer.byteLength).toBe(Frame.HeaderSize);
       
-      const view = new DataView(buffer.buffer);
+      const view = new DataView(buffer);
       expect(view.getUint8(0)).toBe(FrameType.PONG);
       expect(view.getUint8(1)).toBe(0);
       expect(view.getUint32(2, true)).toBe(111);
@@ -62,11 +63,11 @@ describe("Frame", () => {
 describe("FrameCodec", () => {
   describe("encode", () => {
     it("should encode string data correctly", () => {
-      const type = FrameType.DATA;
+      const type = FrameType.TERMINAL_DATA;
       const identifier = 123;
       const data = "Hello, World!";
       
-      const frame = FrameCodec.encode(type, identifier, data);
+      const frame = FrameCodec.create(type, identifier, data);
       
       expect(frame.type).toBe(type);
       expect(frame.identifier).toBe(identifier);
@@ -79,7 +80,7 @@ describe("FrameCodec", () => {
       const identifier = 456;
       const data = 123.456;
       
-      const frame = FrameCodec.encode(type, identifier, data);
+      const frame = FrameCodec.create(type, identifier, data);
       
       expect(frame.type).toBe(type);
       expect(frame.identifier).toBe(identifier);
@@ -88,11 +89,11 @@ describe("FrameCodec", () => {
     });
 
     it("should encode Uint8Array data correctly", () => {
-      const type = FrameType.RESIZE;
+      const type = FrameType.TERMINAL_REFRESH;
       const identifier = 789;
       const data = new Uint8Array([10, 20, 30, 40, 50]);
       
-      const frame = FrameCodec.encode(type, identifier, data);
+      const frame = FrameCodec.create(type, identifier, data);
       
       expect(frame.type).toBe(type);
       expect(frame.identifier).toBe(identifier);
@@ -101,13 +102,13 @@ describe("FrameCodec", () => {
     });
 
     it("should encode ArrayBuffer data correctly", () => {
-      const type = FrameType.DATA;
+      const type = FrameType.TERMINAL_DATA;
       const identifier = 999;
       const arrayBuffer = new ArrayBuffer(4);
       const view = new DataView(arrayBuffer);
       view.setUint32(0, 0x12345678, true);
       
-      const frame = FrameCodec.encode(type, identifier, arrayBuffer);
+      const frame = FrameCodec.create(type, identifier, arrayBuffer);
       
       expect(frame.type).toBe(type);
       expect(frame.identifier).toBe(identifier);
@@ -119,14 +120,14 @@ describe("FrameCodec", () => {
 
     it("should throw error for unsupported data type", () => {
       expect(() => {
-        FrameCodec.encode(FrameType.DATA, 123, { invalid: "object" } as any);
+        FrameCodec.create(FrameType.TERMINAL_DATA, 123, { invalid: "object" } as any);
       }).toThrow("Unsupported data type for encoding");
     });
   });
 
   describe("decode", () => {
     it("should decode valid buffer correctly", () => {
-      const originalFrame = FrameCodec.encode(FrameType.PONG, 555, "test message");
+      const originalFrame = FrameCodec.create(FrameType.PONG, 555, "test message");
       const buffer = originalFrame.toBuffer();
       
       const decodedFrame = FrameCodec.decode(buffer);
@@ -149,7 +150,7 @@ describe("FrameCodec", () => {
       // 创建头部但payload不完整的buffer
       const buffer = new Uint8Array(Frame.HeaderSize + 5); // 声明有5字节payload
       const view = new DataView(buffer.buffer);
-      view.setUint8(0, FrameType.DATA);
+      view.setUint8(0, FrameType.TERMINAL_DATA);
       view.setUint8(1, 10); // 声明10字节payload，但实际只有5字节
       view.setUint32(2, 123, true);
       
@@ -171,10 +172,10 @@ describe("FrameCodec", () => {
     });
 
     it("should handle all valid frame types", () => {
-      const validTypes = [FrameType.PING, FrameType.PONG, FrameType.DATA, FrameType.RESIZE];
+      const validTypes = [FrameType.PING, FrameType.PONG, FrameType.TERMINAL_INIT, FrameType.TERMINAL_REFRESH, FrameType.TERMINAL_DATA];
       
       validTypes.forEach(type => {
-        const frame = FrameCodec.encode(type, 111, "test");
+        const frame = FrameCodec.create(type, 111, "test");
         const decodedFrame = FrameCodec.decode(frame.toBuffer());
         expect(decodedFrame.type).toBe(type);
       });
@@ -255,17 +256,17 @@ describe("FrameCodec", () => {
       };
       
       // 测试字符串
-      const stringFrame = FrameCodec.encode(FrameType.DATA, 1, testData.string);
+      const stringFrame = FrameCodec.create(FrameType.TERMINAL_DATA, 1, testData.string);
       const decodedStringFrame = FrameCodec.decode(stringFrame.toBuffer());
       expect(new TextDecoder().decode(decodedStringFrame.payload)).toBe(testData.string);
       
       // 测试数字
-      const numberFrame = FrameCodec.encode(FrameType.PING, 2, testData.number);
+      const numberFrame = FrameCodec.create(FrameType.PING, 2, testData.number);
       const decodedNumberFrame = FrameCodec.decode(numberFrame.toBuffer());
       expect(FrameCodec.buffer2number(decodedNumberFrame.payload)).toBe(testData.number);
       
       // 测试二进制数据
-      const binaryFrame = FrameCodec.encode(FrameType.DATA, 3, testData.binary);
+      const binaryFrame = FrameCodec.create(FrameType.TERMINAL_DATA, 3, testData.binary);
       const decodedBinaryFrame = FrameCodec.decode(binaryFrame.toBuffer());
       expect(decodedBinaryFrame.payload).toEqual(testData.binary);
     });
@@ -274,13 +275,13 @@ describe("FrameCodec", () => {
       const originalData = "Round-trip test data with special chars: ñáéíóú 中文 🎉";
       const identifier = FrameCodec.randomIdentifier();
       
-      const encodedFrame = FrameCodec.encode(FrameType.DATA, identifier, originalData);
+      const encodedFrame = FrameCodec.create(FrameType.TERMINAL_DATA, identifier, originalData);
       const buffer = encodedFrame.toBuffer();
       const decodedFrame = FrameCodec.decode(buffer);
       const decodedData = new TextDecoder().decode(decodedFrame.payload);
       
       expect(decodedData).toBe(originalData);
-      expect(decodedFrame.type).toBe(FrameType.DATA);
+      expect(decodedFrame.type).toBe(FrameType.TERMINAL_DATA);
       expect(decodedFrame.identifier).toBe(identifier);
     });
   });

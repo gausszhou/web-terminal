@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "build": "sh shells/build.sh",
+    "build:common": "pnpm --filter @web-terminal/common build",
     "dev:portal": "pnpm --filter @web-terminal/portal dev",
     "dev:service": "pnpm --filter @web-terminal/service dev",
     "start": "pnpm --filter @web-terminal/service start",

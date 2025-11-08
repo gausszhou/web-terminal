@@ -1,4 +1,4 @@
-import { FrameCodec, FrameType } from "@web-terminal/common";
+import { Frame, FrameCodec, FrameType } from "@web-terminal/common";
 import { WebSocketDataChannel } from "./WebSocketDataChannel";
 import { WebSocketCommon } from "./WebSocketCommon";
 
@@ -8,28 +8,18 @@ export class WebSocketConnection extends WebSocketCommon implements WebSocket {
   private dataChannels: Map<string, WebSocketDataChannel> = new Map();
   private dataChannelIdentifiers: Map<number, string> = new Map();
 
-  private heartbeatChannel: WebSocketDataChannel;
   private keepAliveInterval: number = 0;
+  private _lastPongTime: number = 0;
   private _rtt: number = 0;
 
   constructor(url: string, protocol?: string) {
     super();
     this.ws = this.createWebSocket(url, protocol);
     this.identifier = FrameCodec.randomIdentifier();
-    // 注册心跳通道
-    this.heartbeatChannel = this.createDataChannel("heartbeat");
-    this.heartbeatChannel.addEventListener("message", (ev: Event) => {
-      const frame = ev as MessageEvent;
-      if (frame.data.type === FrameType.PONG) {
-        const pongAt = Date.now();
-        const pingAt = FrameCodec.buffer2number(frame.data.payload);
-        const rtt = pongAt - pingAt;
-        this._rtt = rtt;
-        const event = new MessageEvent("pong", { data: frame });
-        this.dispatchEvent(event);
-        this.getAllDataChannels().forEach((channel) => {
-          channel.dispatchEvent(event);
-        });
+    this.addEventListener("message", async (ev) => {
+      const frame = (ev as MessageEvent).data as Frame;
+      if (frame.type === FrameType.PONG) {
+        this._onPong(frame);
       }
     });
   }
@@ -40,7 +30,7 @@ export class WebSocketConnection extends WebSocketCommon implements WebSocket {
 
   set onopen(callback: (ev: Event) => any) {
     this.ws.onopen = (ev) => {
-      this.startKeepAlive();
+      this._startKeepAlive();
       const event = new Event("open", {});
       this.dispatchEvent(event);
       this.getAllDataChannels().forEach((channel) => {
@@ -48,10 +38,6 @@ export class WebSocketConnection extends WebSocketCommon implements WebSocket {
       });
       callback(ev);
     };
-  }
-
-  send(data: string | ArrayBuffer) {
-    this._send(FrameType.DATA, data);
   }
 
   set onmessage(callback: (ev: MessageEvent) => any) {
@@ -69,30 +55,37 @@ export class WebSocketConnection extends WebSocketCommon implements WebSocket {
     this.ws.onclose = callback;
   }
 
-  public _send(opcode: FrameType, data: string | ArrayBuffer) {
-    const frame = FrameCodec.encode(opcode, this.identifier, data);
-    this.ws.send(frame.toBuffer());
+  public send(data: string | ArrayBuffer) {
+    this.ws.send(data);
   }
 
   public close() {
     this.clearDataChannels();
-    this.stopKeepAlive();
+    this._stopKeepAlive();
     this.ws.close();
   }
 
-  private startKeepAlive() {
-    this.heartbeatChannel.ping();
-    this.keepAliveInterval = setInterval(() => {
-      this.heartbeatChannel.ping();
-    }, 5000);
+  public reconnect(url: string, protocol?: string) {
+    console.log("重新连接到:", url, protocol);
+    this.ws = this.createWebSocket(url, protocol);
+    this.identifier = FrameCodec.randomIdentifier();
   }
 
-  private stopKeepAlive() {
-    clearInterval(this.keepAliveInterval);
+  // === 自定义方法 ===
+  public _send(
+    opcode: FrameType,
+    data: string | number | ArrayBuffer | Uint8Array
+  ) {
+    if (this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error("WebSocket is not open");
+    }
+    const frame = FrameCodec.create(opcode, this.identifier, data);
+    console.log(frame.identifier, "发送数据:", frame.payload);
+    this.ws.send(frame.toBuffer());
   }
 
   private _onOpen() {
-    this.startKeepAlive();
+    this._startKeepAlive();
     const event = new Event("open", {});
     this.dispatchEvent(event);
     this.getAllDataChannels().forEach((channel) => {
@@ -106,6 +99,10 @@ export class WebSocketConnection extends WebSocketCommon implements WebSocket {
    */
   private _onMessage(ev: MessageEvent) {
     const frame = FrameCodec.decode(ev.data);
+    if (frame.identifier === this.identifier) {
+      this.dispatchEvent(new MessageEvent("message", { data: frame }));
+      return;
+    }
     const dataChannel = this.getDataChannelByIdentifier(frame.identifier);
     if (dataChannel) {
       dataChannel.dispatchEvent(new MessageEvent("message", { data: frame }));
@@ -128,6 +125,54 @@ export class WebSocketConnection extends WebSocketCommon implements WebSocket {
     });
   }
 
+  public _ping() {
+    this._send(FrameType.PING, Date.now());
+  }
+
+  private _onPong(frame: Frame) {
+    const pingTime = FrameCodec.buffer2number(frame.payload);
+    console.log(
+      frame.identifier,
+      "收到 PONG 帧:",
+      pingTime,
+      frame.toBuffer().byteLength
+    );
+    this._lastPongTime = Date.now();
+    this._rtt = this._lastPongTime - pingTime;
+    const event = new Event("pong", {});
+    this.dispatchEvent(event);
+    this.getAllDataChannels().forEach((channel) => {
+      channel.dispatchEvent(event);
+    });
+  }
+
+  private _startKeepAlive() {
+    clearInterval(this.keepAliveInterval);
+    this._ping();
+    this._lastPongTime = Date.now();
+    this.keepAliveInterval = setInterval(() => {
+      this._checkKeepAlive();
+      this._ping();
+    }, 5000);
+  }
+
+  /**
+   * 检查是否超时
+   */
+  private _checkKeepAlive() {
+    const interval = Date.now() - this._lastPongTime;
+    if (interval > 3 * 5000) {
+      const event = new Event("timeout", {});
+      this.dispatchEvent(event);
+      this.getAllDataChannels().forEach((channel) => {
+        channel.dispatchEvent(event);
+      });
+    }
+  }
+
+  private _stopKeepAlive() {
+    clearInterval(this.keepAliveInterval);
+  }
   /**
    * 创建 WebSocket 实例
    * @param url WebSocket 服务器 URL
@@ -157,7 +202,7 @@ export class WebSocketConnection extends WebSocketCommon implements WebSocket {
     if (dataChannel) {
       return dataChannel;
     }
-    dataChannel = new WebSocketDataChannel(this.ws);
+    dataChannel = new WebSocketDataChannel(this, label);
     this.dataChannels.set(label, dataChannel);
     this.dataChannelIdentifiers.set(dataChannel.identifier, label);
     return dataChannel;

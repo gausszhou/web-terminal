@@ -19,8 +19,9 @@
 export enum FrameType {
   PING = 0x01,
   PONG = 0x02,
-  DATA = 0x03,
-  RESIZE = 0x04,
+  TERMINAL_INIT = 0x03,
+  TERMINAL_REFRESH = 0x04,
+  TERMINAL_DATA = 0x05,
 }
 
 export class Frame {
@@ -38,19 +39,19 @@ export class Frame {
     this.payload = payload;
   }
 
-  toBuffer(): Uint8Array {
+  toBuffer(): ArrayBuffer {
     const buffer = new Uint8Array(Frame.HeaderSize + this.payloadLength);
     const view = new DataView(buffer.buffer);
     view.setUint8(0, this.type);
     view.setUint8(1, this.payloadLength);
     view.setUint32(2, this.identifier, true);
     buffer.set(this.payload, Frame.HeaderSize);
-    return buffer;
+    return buffer.buffer;
   }
 }
 
 export class FrameCodec {
-  static encode(
+  static create(
     type: FrameType,
     identifier: number,
     data: string | number | Uint8Array | ArrayBuffer
