@@ -24,7 +24,7 @@ import { WebSocketDataChannel } from './WebSocketDataChannel';
 const props = defineProps({
   url: {
     type: String,
-    default: '/ws-vnc'
+    default: '/api/ws/vnc'
   },
   reconnect: {
     type: Boolean,

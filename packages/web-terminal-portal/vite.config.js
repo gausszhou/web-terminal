@@ -6,13 +6,13 @@ export default defineConfig({
   server: {
     port: 3001,
     proxy: {
-      '/ws-terminal': {
-        target: 'ws://192.168.4.199:63005',
+      '/api/ws/terminal': {
+        target: 'ws://localhost:3000',
         changeOrigin: true,
         ws: true
       },
-      '/ws-vnc': {
-        target: 'ws://192.168.4.199:63005',
+      '/api/ws/vnc': {
+        target: 'ws://localhost:3000',
         changeOrigin: true,
         ws: true
       }

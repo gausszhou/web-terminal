@@ -34,7 +34,7 @@ import { WebSocketDataChannel } from './WebSocketDataChannel';
 const props = defineProps({
   url: {
     type: String,
-    default: '/ws-terminal'
+    default: '/api/ws/terminal'
   }
 });
 
