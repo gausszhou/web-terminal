@@ -18,6 +18,7 @@ export class TerminalManager {
   public removeConnection(ws: WebSocket) {
     const connection = this.terminals.get(ws);
     if (connection) {
+      connection.forEach(terminal => terminal.kill());
       connection.clear();
     }
   }

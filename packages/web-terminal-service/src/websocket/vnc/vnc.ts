@@ -70,4 +70,8 @@ export class VNCServerSocket {
     analyzeVNCMessage(data as Uint8Array, 'client_to_server');
     this.socket.write(data);
   }
+
+  close() {
+    this.socket.end();
+  }
 }

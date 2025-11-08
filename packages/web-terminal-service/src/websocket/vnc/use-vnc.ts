@@ -37,6 +37,14 @@ export class VNCManager {
     map.set(socketId, vncSocket)
     return vncSocket;
   }
+
+  removeConnection(ws: WebSocket) {
+    const map = this.vncSockets.get(ws);
+    if (map) {
+      map.forEach(vncSocket => vncSocket.close());
+      this.vncSockets.clear();
+    }
+  }
 }
 
 export const  isVncMessage = (frame: Frame) => {

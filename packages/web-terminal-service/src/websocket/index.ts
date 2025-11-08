@@ -39,12 +39,14 @@ export function useWebSocket(server: http.Server) {
   // WebSocket连接处理
   wss.on('connection', (ws: WebSocket, req) => {
     console.log('用户连接:', req.socket.remoteAddress);
-    // 监听客户端发送的终端输入
+
     ws.on('message', (message: ArrayBuffer) => {
       const frame = FrameCodec.decode(message);
       if (isEcho(frame)) {
         onEcho(ws, frame);
       } else if (isTerminal(frame)) {
+
+        // 终端
         const terminal = terminalManager.getTerminal(frame.identifier, ws);
         if (frame.type === FrameType.TERMINAL_INIT) {
           onTerminalInit(frame, terminal);
@@ -53,22 +55,26 @@ export function useWebSocket(server: http.Server) {
         } else if (frame.type === FrameType.TERMINAL_DATA) {
           onTerminalData(frame, terminal);
         }
+
       } else if (isVncMessage(frame)) {
+        
+        // VNC
         const vncSocket = vncManager.getVncSocket(ws, frame.identifier);
         if (frame.type === FrameType.VNC_INIT) {
           onVncInit(frame, vncSocket);
         } else if (frame.type === FrameType.VNC_DATA) {
           onVncData(frame, vncSocket);
         }
+
       } else {
         console.log(frame.identifier, '收到未知帧类型:', FrameType[frame.type]);
       }
     });
 
-    // 断开连接时清理资源
     ws.on('close', () => {
       console.log('用户断开连接:', req.socket.remoteAddress);
       terminalManager.removeConnection(ws);
+      vncManager.removeConnection(ws);
     });
   });
 }
