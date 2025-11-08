@@ -3,7 +3,8 @@ import express from "express";
 import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
-import { useWebSocket } from "./websocket.js";
+
+import { useWebSocket } from "./websocket/index.js";
 
 // 获取当前文件的目录路径（ESM替代__dirname）
 const __filename = fileURLToPath(import.meta.url);
@@ -16,6 +17,10 @@ app.use(express.static(path.join(__dirname, "../../web-terminal-portal/dist")));
 
 // 根路径重定向到终端页面
 app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../../web-terminal-portal/dist/index.html"));
+});
+
+app.get("/vnc", (req, res) => {
   res.sendFile(path.join(__dirname, "../../web-terminal-portal/dist/index.html"));
 });
 
