@@ -21,6 +21,8 @@ export class VNCServerSocket {
 
   identifier: number;
 
+  handleshakeDebug = 20; // 只分析前20条握手消息
+
   constructor(ws: WebSocket, identifier: number) {
     console.log(identifier, '创建 VNC 连接');
     this.socket = createSocket();
@@ -30,7 +32,9 @@ export class VNCServerSocket {
     });
 
     this.socket.on('data', (data: Uint8Array) => {
-      analyzeVNCMessage(data, 'server_to_client');
+      if (this.handleshakeDebug-- > 0) {
+        analyzeVNCMessage(data, 'server_to_client');
+      }
       this.onData(data);
     });
 
@@ -67,7 +71,9 @@ export class VNCServerSocket {
   }
 
   write(data: Uint8Array) {
-    analyzeVNCMessage(data as Uint8Array, 'client_to_server');
+    if (this.handleshakeDebug-- > 0)  {
+      analyzeVNCMessage(data, 'client_to_server');
+    }
     this.socket.write(data);
   }
 
