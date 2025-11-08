@@ -14,12 +14,11 @@
 
 <script lang="ts" setup>
 import Loading from '@/components/Loading.vue';
-import { ref, onMounted, onUnmounted } from 'vue';
-import RFB from '@novnc/novnc/lib/rfb';
+import { default as NoVncClient, default as RFB } from '@novnc/novnc/lib/rfb';
+import { FrameCodec, FrameType } from '@web-terminal/common';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { WebSocketConnection } from './WebSocketConnection';
-import NoVncClient from '@novnc/novnc/lib/rfb';
 import { WebSocketDataChannel } from './WebSocketDataChannel';
-import { Frame, FrameCodec, FrameType } from '@web-terminal/common';
 
 // 配置参数（使用默认值）
 const props = defineProps({
@@ -41,10 +40,10 @@ const props = defineProps({
 const vncScreen = ref(null);
 const connected = ref(false);
 const connecting = ref(false);
+// 非响应式数据
 let rfb: NoVncClient;
 let connection: WebSocketConnection;
 let channel: WebSocketDataChannel;
-let ws: WebSocket;
 
 const encode = (data: string | ArrayBuffer) => {
   const frame = FrameCodec.create(FrameType.VNC_DATA, channel.identifier, data);
@@ -64,12 +63,9 @@ const onChannelMessage = (event: Event) => {
 const connect = () => {
   if (!vncScreen.value) return;
   connecting.value = true;
-  ws = new WebSocket('/ws-8080');
-
   connection = new WebSocketConnection(props.url);
   channel = connection.createDataChannel('vnc');
   channel.encode = encode;
-  // channel.decode = decode;
   channel.addEventListener('open', onChannelOpen);
   channel.addEventListener('message', onChannelMessage);
   try {
