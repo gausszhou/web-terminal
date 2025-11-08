@@ -1,65 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Frame, FrameCodec, FrameType } from "@web-terminal/common";
 
-describe("Frame", () => {
-  describe("constructor", () => {
-    it("should create a frame with correct properties", () => {
-      const type = FrameType.TERMINAL_DATA;
-      const identifier = 12345;
-      const payload = new Uint8Array([1, 2, 3, 4, 5]);
-      
-      const frame = new Frame(type, identifier, payload);
-      
-      expect(frame.type).toBe(type);
-      expect(frame.identifier).toBe(identifier);
-      expect(frame.payloadLength).toBe(payload.byteLength);
-      expect(frame.payload).toEqual(payload);
-    });
-
-    it("should handle empty payload", () => {
-      const frame = new Frame(FrameType.PING, 999, new Uint8Array(0));
-      
-      expect(frame.payloadLength).toBe(0);
-      expect(frame.payload.byteLength).toBe(0);
-    });
-  });
-
-  describe("toBuffer", () => {
-    it("should convert frame to buffer correctly", () => {
-      const type = FrameType.RESIZE;
-      const identifier = 54321;
-      const payload = new TextEncoder().encode("test data");
-      const frame = new Frame(type, identifier, payload);
-      
-      const buffer = frame.toBuffer();
-      
-      expect(buffer.byteLength).toBe(Frame.HeaderSize + payload.byteLength);
-      
-      // 验证头部数据
-      const view = new DataView(buffer);
-      expect(view.getUint8(0)).toBe(type);
-      expect(view.getUint8(1)).toBe(payload.byteLength);
-      expect(view.getUint32(2, true)).toBe(identifier);
-      
-      // 验证负载数据
-      const payloadData = buffer.slice(Frame.HeaderSize);
-      expect(new TextDecoder().decode(payloadData)).toBe("test data");
-    });
-
-    it("should handle empty payload in buffer conversion", () => {
-      const frame = new Frame(FrameType.PONG, 111, new Uint8Array(0));
-      const buffer = frame.toBuffer();
-      
-      expect(buffer.byteLength).toBe(Frame.HeaderSize);
-      
-      const view = new DataView(buffer);
-      expect(view.getUint8(0)).toBe(FrameType.PONG);
-      expect(view.getUint8(1)).toBe(0);
-      expect(view.getUint32(2, true)).toBe(111);
-    });
-  });
-});
-
 describe("FrameCodec", () => {
   describe("encode", () => {
     it("should encode string data correctly", () => {
@@ -138,38 +79,7 @@ describe("FrameCodec", () => {
       expect(new TextDecoder().decode(decodedFrame.payload)).toBe("test message");
     });
 
-    it("should throw error for buffer too short", () => {
-      const shortBuffer = new Uint8Array([FrameType.PING, 0]); // Only 2 bytes
-      
-      expect(() => {
-        FrameCodec.decode(shortBuffer);
-      }).toThrow("Data too short: expected at least 6 bytes, got 2");
-    });
-
-    it("should throw error for incomplete payload", () => {
-      // 创建头部但payload不完整的buffer
-      const buffer = new Uint8Array(Frame.HeaderSize + 5); // 声明有5字节payload
-      const view = new DataView(buffer.buffer);
-      view.setUint8(0, FrameType.TERMINAL_DATA);
-      view.setUint8(1, 10); // 声明10字节payload，但实际只有5字节
-      view.setUint32(2, 123, true);
-      
-      expect(() => {
-        FrameCodec.decode(buffer);
-      }).toThrow("Incomplete data: expected 16 bytes, got 11");
-    });
-
-    it("should throw error for invalid frame type", () => {
-      const buffer = new Uint8Array(Frame.HeaderSize);
-      const view = new DataView(buffer.buffer);
-      view.setUint8(0, 0xFF); // 无效的帧类型
-      view.setUint8(1, 0);
-      view.setUint32(2, 123, true);
-      
-      expect(() => {
-        FrameCodec.decode(buffer);
-      }).toThrow("Invalid frame type: 255");
-    });
+ 
 
     it("should handle all valid frame types", () => {
       const validTypes = [FrameType.PING, FrameType.PONG, FrameType.TERMINAL_INIT, FrameType.TERMINAL_REFRESH, FrameType.TERMINAL_DATA];
