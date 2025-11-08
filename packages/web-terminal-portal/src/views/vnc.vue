@@ -3,5 +3,5 @@
 </template>
 
 <script setup>
-import VncViewer from "@/components/VncViewer.vue";
+import VncViewer from "@/components/VNCViewer.vue";
 </script>
