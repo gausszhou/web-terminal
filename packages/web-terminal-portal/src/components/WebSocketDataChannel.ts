@@ -1,5 +1,10 @@
-import { FrameCodec, FrameType } from "@web-terminal/common";
-import { WebSocketConnection } from "./WebSocketConnection";
+import { Frame, FrameCodec, FrameType } from '@web-terminal/common';
+import { WebSocketConnection } from './WebSocketConnection';
+import loglevel from 'loglevel';
+
+const logger = loglevel.getLogger('WebSocketDataChannel');
+
+logger.setLevel('debug');
 
 export class WebSocketDataChannel extends EventTarget implements WebSocket {
   readonly CONNECTING = WebSocket.CONNECTING;
@@ -7,14 +12,18 @@ export class WebSocketDataChannel extends EventTarget implements WebSocket {
   readonly CLOSING = WebSocket.CLOSING;
   readonly CLOSED = WebSocket.CLOSED;
 
-  public identifier: number;
+  public identifier: number = FrameCodec.randomIdentifier();
   public label: string;
   private connection: WebSocketConnection;
+
+  _onopen = (e: Event) => {};
+  _onclose = (e: Event) => {};
+  _onerror = (e: Event) => {};
+  _onmessage = (ev: Event) => {};
 
   constructor(connection: WebSocketConnection, label: string) {
     super();
     this.connection = connection;
-    this.identifier = FrameCodec.randomIdentifier();
     this.label = label;
   }
 
@@ -46,30 +55,65 @@ export class WebSocketDataChannel extends EventTarget implements WebSocket {
     return this.connection.bufferedAmount;
   }
 
-  set onopen(callback: (ev: Event) => any) {}
+  /**
+   *  业务不要使用这些属性
+   */
+  set onopen(callback: (ev: Event) => any) {
+    logger.debug('set open', callback);
+    this._onopen = callback;
+  }
 
-  set onerror(callback: (ev: Event) => any) {}
+  get onopen() {
+    return this._onopen;
+  }
 
-  set onclose(callback: (ev: Event) => any) {}
+  set onerror(callback: (ev: Event) => any) {
+    this._onerror = callback;
+  }
 
-  set onmessage(callback: (ev: MessageEvent) => any) {}
+  set onclose(callback: (ev: Event) => any) {
+    this._onclose = callback;
+  }
 
-    public send(data: string | ArrayBuffer) {
-    this.connection.send(data);
+  get onclose() {
+    return this._onclose;
+  }
+
+  set onmessage(callback: (ev: Event) => any) {
+    logger.debug('set message', callback);
+    this._onmessage = ev => {
+      console.log('_onmessage in DataChannel');
+      const event = new MessageEvent('message', { data: this.decode((ev as MessageEvent).data) });
+      callback(event);
+    };
+  }
+
+  get onmessage() {
+    return this._onmessage;
+  }
+
+  public send(data: string | ArrayBuffer) {
+    const buff = this.encode(data);
+    this.connection.send(buff);
   }
 
   public close() {
     this.connection.closeDataChannel(this.label);
   }
 
+  public encode(data: string | ArrayBuffer) {
+    return data;
+  }
 
-  /**
-   * 发送数据 携带标识符
-   * @param type 帧类型
-   * @param data 数据
-   */
-  public _send(type: FrameType, data: string | Uint8Array) {
-    const frame = FrameCodec.create(type, this.identifier, data);
+  public decode(data: Frame): ArrayBuffer | Uint8Array | string {
+    return data.payload;
+  }
+
+  public _send(opcode: FrameType, data: string | number | ArrayBuffer | Uint8Array) {
+    if (this.connection.readyState !== WebSocket.OPEN) {
+      throw new Error('WebSocket is not open');
+    }
+    const frame = FrameCodec.create(opcode, this.identifier, data);
     this.connection.send(frame.toBuffer());
   }
 }

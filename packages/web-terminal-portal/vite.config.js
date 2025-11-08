@@ -6,11 +6,26 @@ export default defineConfig({
   server: {
     port: 3001,
     proxy: {
-      '/terminal': {
+      '/ws-terminal': {
         target: 'ws://localhost:3000',
         changeOrigin: true,
         ws: true
+      },
+      '/ws-vnc': {
+        target: 'ws://localhost:3000',
+        changeOrigin: true,
+        ws: true
+      },
+      '/ws-8080': {
+        target: 'ws://localhost:8080',
+        changeOrigin: true,
+        ws: true
       }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': '/src'
     }
   },
   build: {

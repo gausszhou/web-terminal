@@ -10,22 +10,40 @@
         <div class="terminal-latency">{{ latencyText }}</div>
       </div>
     </div>
-    <div ref="terminalRef" class="terminal"></div>
+    <div v-if="!connected" class="connection-status">
+      <Loading v-if="connecting" message="正在连接 VNC 服务器..." />
+      <div v-else class="disconnected">
+        <span>未连接</span>
+      </div>
+    </div>
+    <div>
+      <div ref="terminalRef" class="terminal"></div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import { Terminal } from "xterm";
-import { FitAddon } from "xterm-addon-fit";
-import { Frame, FrameType } from "@web-terminal/common";
-import { WebSocketConnection } from "./WebSocketConnection";
-import { WebSocketDataChannel } from "./WebSocketDataChannel";
+import Loading from '@/components/Loading.vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+import { Frame, FrameType } from '@web-terminal/common';
+import { WebSocketConnection } from './WebSocketConnection';
+import { WebSocketDataChannel } from './WebSocketDataChannel';
 
+const props = defineProps({
+  url: {
+    type: String,
+    default: '/ws-terminal'
+  }
+});
+
+const connected = ref(false);
+const connecting = ref(false);
 const terminalRef = ref<HTMLElement>();
-const statusText = ref("连接中...");
-const latencyText = ref("延迟：...ms");
-const statusClass = ref("");
+const statusText = ref('连接中...');
+const latencyText = ref('延迟：...ms');
+const statusClass = ref('');
 
 let terminal: Terminal;
 let fitAddon: FitAddon;
@@ -39,7 +57,7 @@ const onData = (data: string) => {
 
 const onPaste = (event: ClipboardEvent) => {
   if (event.clipboardData) {
-    const text = event.clipboardData.getData("text");
+    const text = event.clipboardData.getData('text');
     console.log(text);
     terminal.write(text);
   }
@@ -52,13 +70,13 @@ const onResize = () => {
 const initTerminal = () => {
   terminal = new Terminal({
     theme: {
-      background: "#1e1e1e",
-      foreground: "#ffffff",
-      cursor: "#ffffff",
+      background: '#1e1e1e',
+      foreground: '#ffffff',
+      cursor: '#ffffff'
     },
     fontSize: 14,
     fontFamily: "Consolas, 'Courier New', monospace",
-    cursorBlink: true,
+    cursorBlink: true
   });
 
   fitAddon = new FitAddon();
@@ -68,13 +86,13 @@ const initTerminal = () => {
   terminal.onData(onData);
 
   if (terminalRef.value) {
-    terminalRef.value.addEventListener("paste", onPaste);
+    terminalRef.value.addEventListener('paste', onPaste);
     terminal.open(terminalRef.value);
     setTimeout(() => {
       fitAddon.fit();
     }, 100);
   }
-  window.addEventListener("resize", onResize);
+  window.addEventListener('resize', onResize);
 };
 
 const destroyTerminal = () => {
@@ -82,9 +100,9 @@ const destroyTerminal = () => {
     terminal.dispose();
   }
   if (terminalRef.value) {
-    terminalRef.value.removeEventListener("paste", onPaste);
+    terminalRef.value.removeEventListener('paste', onPaste);
   }
-  window.removeEventListener("resize", onResize);
+  window.removeEventListener('resize', onResize);
 };
 
 // ====== WebSocket 事件处理 ======
@@ -94,61 +112,63 @@ const onConnectionPong = () => {
 };
 
 const onConnectionTimeout = () => {
-  console.log("连接超时");
-  statusText.value = "连接超时";
-  statusClass.value = "disconnected";
-  connection.reconnect("/terminal");
+  console.log('连接超时');
+  statusText.value = '连接超时';
+  statusClass.value = 'disconnected';
+  connection.reconnect(props.url);
 };
 
 // ====== 刷新终端 ======
 
 const refresh = () => {
   // term.write("\x1b[2J\x1b[0;0H");
-  terminal.reset()
-  channel._send(FrameType.TERMINAL_REFRESH, "");
+  terminal.reset();
+  channel._send(FrameType.TERMINAL_REFRESH, '');
 };
 
 const onChannelOpen = () => {
-  console.log("数据通道已打开");
-  statusText.value = "已连接";
-  statusClass.value = "connected";
-  channel._send(FrameType.TERMINAL_INIT, "");
+  console.log('数据通道已打开');
+  statusText.value = '已连接';
+  statusClass.value = 'connected';
+  channel._send(FrameType.TERMINAL_INIT, '');
+    setTimeout(() => {
+      connected.value = true;
+    connecting.value = false;
+  }, 1000);
 };
 
 const onChannelClose = () => {
-  console.log("数据通道已关闭");
-  statusText.value = "已断开";
-  statusClass.value = "disconnected";
+  console.log('数据通道已关闭');
+  statusText.value = '已断开';
+  statusClass.value = 'disconnected';
 };
 
 const onChannelMessage = (event: Event) => {
   const frame = (event as MessageEvent).data as Frame;
   if (frame.type === FrameType.TERMINAL_DATA) {
     const text = new TextDecoder().decode(frame.payload);
-    console.log(frame.identifier, "收到DATA帧:", frame.toBuffer().byteLength);
     console.log(text);
     terminal.write(text);
   }
 };
 
 const initWebSocket = () => {
-  connection = new WebSocketConnection("/terminal");
-  connection.addEventListener("pong", onConnectionPong);
-  connection.addEventListener("timeout", onConnectionTimeout);
+  connecting.value = true;
+  connection = new WebSocketConnection(props.url);
+  connection.addEventListener('pong', onConnectionPong);
+  connection.addEventListener('timeout', onConnectionTimeout);
+  channel = connection.createDataChannel('default');
+  channel.addEventListener('open', onChannelOpen);
+  channel.addEventListener('close', onChannelClose);
+  channel.addEventListener('message', onChannelMessage);
 
-  channel = connection.createDataChannel("default");
-  console.log(channel.identifier);
-  
-  channel.addEventListener("open", onChannelOpen);
-  channel.addEventListener("close", onChannelClose);
-  channel.addEventListener("message", onChannelMessage);
 };
 
 const destroyWebSocket = () => {
   if (channel) {
-    channel.removeEventListener("open", onChannelOpen);
-    channel.removeEventListener("close", onChannelClose);
-    channel.removeEventListener("message", onChannelMessage);
+    channel.removeEventListener('open', onChannelOpen);
+    channel.removeEventListener('close', onChannelClose);
+    channel.removeEventListener('message', onChannelMessage);
   }
   if (connection) {
     connection.close();
@@ -165,6 +185,11 @@ onUnmounted(() => {
   destroyWebSocket();
 });
 </script>
+
+<style>
+/* 导入xterm.js样式 */
+@import 'xterm/css/xterm.css';
+</style>
 
 <style scoped>
 .terminal-container {
@@ -237,5 +262,19 @@ onUnmounted(() => {
 .terminal-latency {
   color: #888;
   font-size: 12px;
+}
+
+.connection-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  text-align: center;
+  z-index: 99;
+}
+
+.disconnected {
+  color: #ccc;
 }
 </style>

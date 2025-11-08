@@ -1,6 +1,3 @@
-/* 导入xterm.js样式 */
-@import 'xterm/css/xterm.css';
-
 /* 全局样式 */
 body {
     margin: 0;

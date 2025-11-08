@@ -1,12 +1,9 @@
 <template>
   <div class="app">
-    <Terminal />
+    <router-view />
   </div>
 </template>
 
-<script setup lang="ts">
-import Terminal from './components/Terminal.vue'
-</script>
 
 <style scoped>
 .app {
