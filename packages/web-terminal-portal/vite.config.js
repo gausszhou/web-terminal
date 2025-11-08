@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   plugins: [vue()],
@@ -7,17 +7,12 @@ export default defineConfig({
     port: 3001,
     proxy: {
       '/ws-terminal': {
-        target: 'ws://localhost:3000',
+        target: 'ws://192.168.4.199:63005',
         changeOrigin: true,
         ws: true
       },
       '/ws-vnc': {
-        target: 'ws://localhost:3000',
-        changeOrigin: true,
-        ws: true
-      },
-      '/ws-8080': {
-        target: 'ws://localhost:8080',
+        target: 'ws://192.168.4.199:63005',
         changeOrigin: true,
         ws: true
       }
@@ -32,4 +27,4 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false
   }
-})
+});

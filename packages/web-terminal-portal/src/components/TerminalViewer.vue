@@ -11,7 +11,7 @@
       </div>
     </div>
     <div v-if="!connected" class="connection-status">
-      <Loading v-if="connecting" message="正在连接 VNC 服务器..." />
+      <Loading v-if="connecting" message="正在连接终端服务器..." />
       <div v-else class="disconnected">
         <span>未连接</span>
       </div>
@@ -131,10 +131,8 @@ const onChannelOpen = () => {
   statusText.value = '已连接';
   statusClass.value = 'connected';
   channel._send(FrameType.TERMINAL_INIT, '');
-    setTimeout(() => {
-      connected.value = true;
-    connecting.value = false;
-  }, 1000);
+  connected.value = true;
+  connecting.value = false;
 };
 
 const onChannelClose = () => {
@@ -161,7 +159,6 @@ const initWebSocket = () => {
   channel.addEventListener('open', onChannelOpen);
   channel.addEventListener('close', onChannelClose);
   channel.addEventListener('message', onChannelMessage);
-
 };
 
 const destroyWebSocket = () => {

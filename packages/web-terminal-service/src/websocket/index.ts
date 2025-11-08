@@ -45,7 +45,6 @@ export function useWebSocket(server: http.Server) {
       if (isEcho(frame)) {
         onEcho(ws, frame);
       } else if (isTerminal(frame)) {
-
         // 终端
         const terminal = terminalManager.getTerminal(frame.identifier, ws);
         if (frame.type === FrameType.TERMINAL_INIT) {
@@ -55,9 +54,11 @@ export function useWebSocket(server: http.Server) {
         } else if (frame.type === FrameType.TERMINAL_DATA) {
           onTerminalData(frame, terminal);
         }
-
       } else if (isVncMessage(frame)) {
-        
+        if (process.env.VNC_ENABLE !== 'true') {
+          console.log('VNC功能未启用，请检查环境变量VNC_ENABLE');
+          return;
+        }
         // VNC
         const vncSocket = vncManager.getVncSocket(ws, frame.identifier);
         if (frame.type === FrameType.VNC_INIT) {
@@ -65,7 +66,6 @@ export function useWebSocket(server: http.Server) {
         } else if (frame.type === FrameType.VNC_DATA) {
           onVncData(frame, vncSocket);
         }
-
       } else {
         console.log(frame.identifier, '收到未知帧类型:', FrameType[frame.type]);
       }
