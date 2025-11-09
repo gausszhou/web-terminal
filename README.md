@@ -2,6 +2,13 @@
 
 Web Terminal 和 Web VNC 技术调研
 
+
+## 预览
+
+![](https://www.gausszhou.top/static/data/github/web-terminal/terminal.png)
+
+![](https://www.gausszhou.top/static/data/github/web-terminal/vnc.webp)
+
 ## 部署 VNC
 
 ```bash
