@@ -69,7 +69,13 @@ const connect = () => {
   channel.addEventListener('open', onChannelOpen);
   channel.addEventListener('message', onChannelMessage);
   try {
-    rfb = new RFB(vncScreen.value, channel);
+    rfb = new RFB(vncScreen.value, channel, {
+      credentials: {
+        username: 'default',
+        password: 'vncpassword',
+        target: 'default'
+      },
+    });
     // 事件监听
     rfb.addEventListener('connect', onConnect);
     rfb.addEventListener('disconnect', onDisconnect);

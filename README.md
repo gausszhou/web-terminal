@@ -5,9 +5,10 @@ Web Terminal 和 Web VNC 技术调研
 ## 部署 VNC
 
 ```bash
-docker run --rm -p 6080:6080 -p 5901:5901 \
-consol/ubuntu-xfce-vnc \
-bash -c "x11vnc -create -forever -nopw -display :1 & websockify --web /usr/share/novnc/ 6080 localhost:5901"
+docker run consol/ubuntu-xfce-vnc --help
+# password vncpassword
+# resolution 1280x720
+docker run -d -p 5901:5901 -p 6901:6901 -e VNC_PW="vncpassword" -e VNC_RESOLUTION=1280x720 consol/ubuntu-xfce-vnc
 ```
 
 ## 开发
