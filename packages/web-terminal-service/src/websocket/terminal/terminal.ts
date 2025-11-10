@@ -1,4 +1,4 @@
-import { MockPty } from "./terminal-mock-pty.js";
+import { MockPty } from "@web-terminal/mockpty";
 
 export class Terminal {
   pty: MockPty;

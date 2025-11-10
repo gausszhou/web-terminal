@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { IPty, IPtyForkOptions } from './terminal-mock-pty-types.js';
+import type { IPty, IPtyForkOptions } from './types.js';
 
 export class MockPty extends EventEmitter implements IPty {
   public readonly pid: number;
