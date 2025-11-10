@@ -3,6 +3,7 @@ import { WebSocketDataChannel } from './WebSocketDataChannel';
 import { getLogger } from 'loglevel';
 
 const logger = getLogger('WebSocketConnection');
+logger.setLevel('debug');
 
 export class WebSocketConnection extends EventTarget implements WebSocket {
   ws: WebSocket;
@@ -121,8 +122,8 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
     return data;
   }
 
-  public decode(data: Frame): ArrayBuffer | Uint8Array | string {
-    return data.payload;
+  public decode(data: Frame): Frame | ArrayBuffer | Uint8Array | string {
+    return data;
   }
 
   public close() {
@@ -155,6 +156,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
   private _onOpen(e: Event) {
     this._startKeepAlive();
     const event = new Event('open', {});
+    this.dispatchEvent(event);
     this.getAllDataChannels().forEach(channel => {
       channel._onopen(event);
       channel.dispatchEvent(event);
@@ -242,6 +244,10 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
   listenPong() {
     this.addEventListener('message', async ev => {
       const frame = (ev as MessageEvent).data as Frame;
+      if (!(frame instanceof Frame)) {
+        logger.warn('收到非 Frame 数据:', frame);
+        return;
+      }
       if (frame.type === FrameType.PONG) {
         this._onPong(frame);
       }

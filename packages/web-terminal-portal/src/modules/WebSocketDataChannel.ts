@@ -101,7 +101,7 @@ export class WebSocketDataChannel extends EventTarget implements WebSocket {
     return data;
   }
 
-  public decode(data: Frame): ArrayBuffer | Uint8Array | string {
+  public decode(data: Frame): Frame | ArrayBuffer | Uint8Array | string {
     return data.payload;
   }
 

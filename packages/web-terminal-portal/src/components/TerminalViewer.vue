@@ -107,7 +107,7 @@ const destroyTerminal = () => {
 
 // ====== WebSocket 事件处理 ======
 
-const onConnectionPong = () => {
+const onConnectionPong = () => {  
   latencyText.value = `延迟: ${connection.rtt}ms`;
 };
 
@@ -127,7 +127,6 @@ const refresh = () => {
 };
 
 const onChannelOpen = () => {
-  console.log('数据通道已打开');
   statusText.value = '已连接';
   statusClass.value = 'connected';
   channel._send(FrameType.TERMINAL_INIT, '');
@@ -145,7 +144,6 @@ const onChannelMessage = (event: Event) => {
   const frame = (event as MessageEvent).data as Frame;
   if (frame.type === FrameType.TERMINAL_DATA) {
     const text = new TextDecoder().decode(frame.payload);
-    console.log(text);
     terminal.write(text);
   }
 };
