@@ -1,54 +1,49 @@
 import net from 'net';
 import WebSocket from 'ws';
 import { analyzeVNCMessage } from '@web-terminal/common';
-import dotenv from "dotenv";
+import loglevel, { LogLevelDesc } from 'loglevel';
+import dotenv from 'dotenv';
 dotenv.config();
-
 
 const VNC_PORT = Number(process.env.VNC_PORT) || 5900;
 const VNC_HOST = process.env.VNC_HOST || 'localhost';
+const logger = loglevel.getLogger('VNCServerSocket');
 
-export function createSocket() {
-  const socket = net.createConnection({
-    port: VNC_PORT,
-    host: VNC_HOST
-  });
-  return socket;
-}
+logger.setLevel((process.env.LOG_LEVEL as LogLevelDesc) || 'info');
 
 export class VNCServerSocket {
   private socket: net.Socket;
 
-  identifier: number;
+  private handleshakeDebug = 20; // 只分析前20条握手消息
 
-  handleshakeDebug = 20; // 只分析前20条握手消息
+  public identifier: number;
 
   constructor(ws: WebSocket, identifier: number) {
-    console.log(identifier, '创建 VNC 连接');
-    this.socket = createSocket();
+    logger.debug(identifier, '创建 VNC 连接');
+    this.socket = net.createConnection({
+      port: VNC_PORT,
+      host: VNC_HOST
+    });
     this.identifier = identifier;
+    // TCP 事件
     this.socket.on('connect', () => {
-      console.log('VNC 连接成功');
+      logger.debug('VNC 连接成功');
     });
 
-    this.socket.on('data', (data: Uint8Array) => {
-      if (this.handleshakeDebug-- > 0) {
-        analyzeVNCMessage(data, 'server_to_client');
-      }
-      this.onData(data);
-    });
+    this.socket.on('data', this._onData.bind(this));
 
     this.socket.on('close', () => {
-      console.log('VNC 连接关闭');
+      logger.debug('VNC 连接关闭');
       ws.close();
     });
 
     this.socket.on('error', err => {
-      console.log('VNC 连接错误:', err);
+      logger.debug('VNC 连接错误:', err);
       this.socket.end();
       ws.close();
     });
 
+    // WebSocket 事件
     ws.on('close', () => {
       this.socket.end();
     });
@@ -66,13 +61,20 @@ export class VNCServerSocket {
     return socket;
   }
 
-  onData(data:Uint8Array) {
+  _onData(data: Uint8Array) {
+    if (this.handleshakeDebug-- > 0) {
+      logger.debug(analyzeVNCMessage(data, 'server_to_client'));
+    }
+    this.onData(data);
+  }
+
+  onData(data: Uint8Array) {
     // TODO Override
   }
 
   write(data: Uint8Array) {
-    if (this.handleshakeDebug-- > 0)  {
-      analyzeVNCMessage(data, 'client_to_server');
+    if (this.handleshakeDebug-- > 0) {
+      logger.debug(analyzeVNCMessage(data, 'client_to_server'));
     }
     this.socket.write(data);
   }

@@ -33,8 +33,8 @@ useWebSocket(server);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Web终端服务运行在 http://localhost:${PORT}`);
-  console.log(`健康检查: http://localhost:${PORT}/health`);
+  console.log(`Web 服务运行: http://localhost:${PORT}`);
+  console.log(`API 健康检查: http://localhost:${PORT}/health`);
 });
 
 export default app;

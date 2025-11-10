@@ -53,6 +53,6 @@ export function analyzeVNCMessage(data: Uint8Array, direction: string) {
       typeName = serverMessageTypes[messageType] || `Unknown Server (${messageType})`;
     }
 
-    console.log(`${directionStr}: ${typeName} - ${data.length} bytes`);
+    return `${directionStr}: ${typeName} - ${data.length} bytes`;
   }
 }

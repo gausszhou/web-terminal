@@ -1,37 +1,21 @@
 import { MockPty } from "@web-terminal/mockpty";
 
 export class Terminal {
-  pty: MockPty;
-  identifier: number;
-  history: string[] = [];
-  _dataCallbacks: ((data: string) => void)[] = [];
+  public identifier: number;
+
+  private pty: MockPty;
 
   constructor(identifier: number) {
     this.pty = new MockPty("bash", [], { cwd: "/root" });
     this.identifier = identifier;
-    this.pty.onData(this._onData.bind(this));
-    this.pty.onExit(this._onExit.bind(this));
+    this.pty.onData(this.onData.bind(this));
   }
   
-  init() {
-    if (this.pty.getHistory().length > 0) {
-      const data = this.pty.getHistory().join("");
-      this._dataCallbacks.forEach((callback) => callback(data));
-      return false;
-    } else {
-      this.refresh();
-    }
-  }
-
-  cache(identifier: number) {
-    this.identifier = identifier;
-    this._dataCallbacks = [];
-  }
+  init() {}
 
   refresh() {
     this.pty = new MockPty("bash", [], { cwd: "/root" });
-    this.pty.onData(this._onData.bind(this));
-    this.pty.onExit(this._onExit.bind(this));
+    this.pty.onData(this.onData.bind(this));
   }
 
   write(data: string) {
@@ -42,15 +26,7 @@ export class Terminal {
     this.pty.kill();
   }
 
-  _onExit() {
-    this._dataCallbacks.forEach((callback) => callback('exit'));
-  }
-
-  _onData(data: string) {
-    this._dataCallbacks.forEach((callback) => callback(data));
-  }
-
-  onData(callback: (data: string) => void): void {
-    this._dataCallbacks.push(callback);
+  onData(data:string): void {
+    // TODO Override
   }
 }

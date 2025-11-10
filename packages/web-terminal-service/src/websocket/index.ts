@@ -1,5 +1,6 @@
 import http from 'http';
 import WebSocket, { WebSocketServer } from 'ws';
+import loglevel, { LogLevelDesc } from 'loglevel';
 import { Frame, FrameCodec, FrameType } from '@web-terminal/common';
 import { Terminal } from './terminal/terminal.js';
 import { isEcho, onEcho } from './echo/index.js';
@@ -7,38 +8,47 @@ import { isTerminal, TerminalManager } from './terminal/use-terminal.js';
 import { isVncMessage, VNCManager } from './vnc/use-vnc.js';
 import { VNCServerSocket } from './vnc/vnc.js';
 
+const logger = loglevel.getLogger('WebSocketServer');
+logger.setLevel((process.env.LOG_LEVEL as LogLevelDesc) || 'info');
+
 const onTerminalInit = (frame: Frame, terminal: Terminal) => {
-  // console.log(frame.identifier, '收到 TERMINAL_INIT 帧:', frame.payloadLength);
+  logger.debug(frame.identifier, '收到 TERMINAL_INIT 帧:', frame.payloadLength);
   terminal.init();
 };
 
 const onTerminalRefresh = (frame: Frame, terminal: Terminal) => {
-  // console.log(frame.identifier, '收到 TERMINAL_REFRESH 帧:', frame.payloadLength);
+  logger.debug(frame.identifier, '收到 TERMINAL_REFRESH 帧:', frame.payloadLength);
   terminal.refresh();
 };
 
 const onTerminalData = (frame: Frame, terminal: Terminal) => {
   const input = new TextDecoder().decode(frame.payload);
-  // console.log(frame.identifier, '收到 TERMINAL_DATA 帧:', frame.payloadLength);
+  logger.debug(frame.identifier, '收到 TERMINAL_DATA 帧:', frame.payloadLength);
   terminal.write(input);
 };
 
 const onVncInit = (frame: Frame, socket: VNCServerSocket) => {
-  // console.log(frame.identifier, '收到 VNC_INIT 帧:', frame.payloadLength);
+  logger.debug(frame.identifier, '收到 VNC_INIT 帧:', frame.payloadLength);
 };
 
 const onVncData = (frame: Frame, socket: VNCServerSocket) => {
-  // console.log(frame.identifier, '收到 VNC_DATA 帧:', frame.payloadLength);
+  logger.debug(frame.identifier, '收到 VNC_DATA 帧:', frame.payloadLength);
   socket.write(frame.payload);
 };
 
 export function useWebSocket(server: http.Server) {
   const wss = new WebSocketServer({ server });
+  wss.addListener('headers', (headers, req) => {
+    logger.debug('WebSocket请求头:', req.socket.remoteAddress, headers);
+  });
+  wss.addListener('listening', () => {
+    logger.info('WebSocket服务器已启动，等待客户端连接...');
+  });
   const terminalManager = new TerminalManager();
   const vncManager = new VNCManager();
   // WebSocket连接处理
-  wss.on('connection', (ws: WebSocket, req) => {
-    console.log('用户连接:', req.socket.remoteAddress);
+  wss.addListener('connection', (ws: WebSocket, req) => {
+    logger.info('用户连接:', req.socket.remoteAddress);
 
     ws.on('message', (message: ArrayBuffer) => {
       const frame = FrameCodec.decode(message);
@@ -56,7 +66,7 @@ export function useWebSocket(server: http.Server) {
         }
       } else if (isVncMessage(frame)) {
         if (process.env.VNC_ENABLE !== 'true') {
-          console.log('VNC功能未启用，请检查环境变量VNC_ENABLE');
+          logger.debug('VNC功能未启用，请检查环境变量VNC_ENABLE');
           return;
         }
         // VNC
@@ -67,12 +77,12 @@ export function useWebSocket(server: http.Server) {
           onVncData(frame, vncSocket);
         }
       } else {
-        console.log(frame.identifier, '收到未知帧类型:', FrameType[frame.type]);
+        logger.warn(frame.identifier, '收到未知帧类型:', FrameType[frame.type]);
       }
     });
 
-    ws.on('close', () => {
-      console.log('用户断开连接:', req.socket.remoteAddress);
+    ws.addEventListener('close', () => {
+      logger.info('用户断开连接:', req.socket.remoteAddress);
       terminalManager.removeConnection(ws);
       vncManager.removeConnection(ws);
     });
