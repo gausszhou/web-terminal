@@ -1,18 +1,18 @@
 /**
- * 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
- * +---------------+--------------+
- * |   FrameType   |  Reserve     |
- * +---------------+--------------+
- * |         Payload Length       |
- * |                              |
- * +---------------+--------------+
- * |          Identifier          |
- * |                              |
- * +---------------+--------------+
- * |                              |
- * |            Payload           |
- * |                              |
- * +---------------+--------------+
+ * 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0
+ * +---------------+---------------+
+ * |   FrameType   |  Reserve      |
+ * +---------------+---------------+
+ * |         Payload Length        |
+ * |                               |
+ * +---------------+---------------+
+ * |          Identifier           |
+ * |                               |
+ * +---------------+---------------+
+ * |                               |
+ * |         Payload...            |
+ * |                               |
+ * +---------------+---------------+
  */
 
 import { FrameType } from './types.js';
@@ -24,7 +24,7 @@ export * from './utils.js';
 
 const FRAME_TYPE_SIZE = 1; // FrameType 使用 1 字节表示
 const RESERVED_SIZE = 1; // Reserve 使用 1 字节表示
-const PAYLOAD_LENGTH_SIZE = 4; // Payload Length 使用 2 字节表示
+const PAYLOAD_LENGTH_SIZE = 4; // Payload Length 使用 4 字节表示
 const IDENTIFIER_SIZE = 4; // Identifier 使用 4 字节表示
 const HEADER_SIZE = FRAME_TYPE_SIZE + RESERVED_SIZE + PAYLOAD_LENGTH_SIZE + IDENTIFIER_SIZE;
 const FRAME_TYPE_AT = 0;
@@ -51,7 +51,7 @@ export class Frame {
     const buffer = new Uint8Array(Frame.HeaderSize + this.payloadLength);
     const view = new DataView(buffer.buffer);
     view.setUint16(FRAME_TYPE_AT, this.type);
-    view.setUint16(PAYLOAD_LENGTH_AT, this.payloadLength);
+    view.setUint32(PAYLOAD_LENGTH_AT, this.payloadLength);
     view.setUint32(IDENTIFIER_AT, this.identifier, false);
     buffer.set(this.payload, Frame.HeaderSize);
     return buffer.buffer;
@@ -91,7 +91,7 @@ export class FrameCodec {
     const u8 = new Uint8Array(buf);
     const view = new DataView(u8.buffer);
     const type = view.getUint16(FRAME_TYPE_AT);
-    const payloadLength = view.getUint16(PAYLOAD_LENGTH_AT);
+    const payloadLength = view.getUint32(PAYLOAD_LENGTH_AT);
     const identifier = view.getUint32(IDENTIFIER_AT, false);
 
     // 检查payload长度是否有效
