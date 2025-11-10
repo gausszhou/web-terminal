@@ -1,18 +1,21 @@
-import { createRouter, createWebHistory } from 'vue-router'
-
+import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
-    history: createWebHistory(),
-    routes: [
-        {
-            path: '/',
-            component: () => import('@/views/terminal.vue'),
-        },
-        {
-            path: '/vnc',
-            component: () => import('@/views/vnc.vue'),
-        },
-    ],
-})
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '',
+      redirect: '/terminal'
+    },
+    {
+      path: '/terminal',
+      component: () => import('@/views/terminal.vue')
+    },
+    {
+      path: '/vnc',
+      component: () => import('@/views/vnc.vue')
+    }
+  ]
+});
 
-export default router
+export default router;
