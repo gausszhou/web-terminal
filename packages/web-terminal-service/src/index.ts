@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import express from "express";
 import http from "http";
 import path from "path";
@@ -16,18 +16,17 @@ const server = http.createServer(app);
 app.use(express.static(path.join(__dirname, "../../web-terminal-portal/dist")));
 
 // 根路径重定向到终端页面
-app.get("/", (req, res) => {
+const index = (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, "../../web-terminal-portal/dist/index.html"));
-});
+}
 
-app.get("/vnc", (req, res) => {
-  res.sendFile(path.join(__dirname, "../../web-terminal-portal/dist/index.html"));
-});
 
 // 健康检查端点
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
+
+app.get("*", index);
 
 useWebSocket(server);
 

@@ -6,12 +6,15 @@ export class Terminal {
   private pty: MockPty;
 
   constructor(identifier: number) {
-    this.pty = new MockPty("bash", [], { cwd: "/root" });
     this.identifier = identifier;
+    this.pty = new MockPty("bash", [], { cwd: "/root" });
     this.pty.onData(this.onData.bind(this));
   }
   
-  init() {}
+  init() {
+    this.pty = new MockPty("bash", [], { cwd: "/root" });
+    this.pty.onData(this.onData.bind(this));
+  }
 
   refresh() {
     this.pty = new MockPty("bash", [], { cwd: "/root" });
