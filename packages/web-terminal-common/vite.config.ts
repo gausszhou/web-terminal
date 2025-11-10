@@ -1,20 +1,16 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-    build: {
-        lib: {
-            entry: './src/index.ts',
-            name: 'WebTerminalCommon',
-            fileName: 'index'
-        },
-        rollupOptions: {
-            output: {
-                exports: 'named'
-            }
-        }
+  build: {
+    lib: {
+      entry: './src/index.ts',
+      name: 'WebTerminalCommon',
+      fileName: 'index'
     },
-    test: {
-        globals: true,
-        environment: 'node'
+    rollupOptions: {
+      output: {
+        exports: 'named'
+      }
     }
-})
+  }
+});
