@@ -1,5 +1,8 @@
 import { Frame, FrameCodec, FrameType } from '@web-terminal/common';
 import { WebSocketDataChannel } from './WebSocketDataChannel';
+import { getLogger } from 'loglevel';
+
+const logger = getLogger('WebSocketConnection');
 
 export class WebSocketConnection extends EventTarget implements WebSocket {
   ws: WebSocket;
@@ -46,7 +49,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
 
   constructor(url: string, protocol?: string) {
     super();
-    console.log('创建 WebSocket 连接:', url, protocol);
+    logger.debug('创建 WebSocket 连接:', url, protocol);
     this.ws = this.createWebSocket(url, protocol);
     this.identifier = FrameCodec.randomIdentifier();
     this.listenPong()
@@ -129,7 +132,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
   }
 
   public reconnect(url: string, protocol?: string) {
-    console.log('重新连接到:', url, protocol);
+    logger.debug('重新连接到:', url, protocol);
     this.ws = this.createWebSocket(url, protocol);
     this.identifier = FrameCodec.randomIdentifier();
   }
@@ -164,7 +167,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
    */
   private _onMessage(ev: MessageEvent) {
     const frame = FrameCodec.decode(ev.data);
-    console.log(frame.identifier, FrameType[frame.type],frame.payloadLength);
+    logger.debug(frame.identifier, FrameType[frame.type],frame.payloadLength);
     if (frame.identifier === this.identifier) {
       const event = new MessageEvent('message', { data: this.decode(frame) });
       this.dispatchEvent(event);

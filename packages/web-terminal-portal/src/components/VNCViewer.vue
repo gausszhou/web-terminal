@@ -17,8 +17,12 @@ import Loading from '@/components/Loading.vue';
 import { default as NoVncClient, default as RFB } from '@novnc/novnc/lib/rfb';
 import { FrameCodec, FrameType } from '@web-terminal/common';
 import { onMounted, onUnmounted, ref } from 'vue';
-import { WebSocketConnection } from './WebSocketConnection';
-import { WebSocketDataChannel } from './WebSocketDataChannel';
+import { WebSocketConnection } from '@/modules/WebSocketConnection';
+import { WebSocketDataChannel } from '@/modules/WebSocketDataChannel';
+import { RFBClipboard } from '@/modules/RFBClipbaord';
+import { getLogger } from 'loglevel';
+
+const logger = getLogger('VNCViewer');
 
 // 配置参数（使用默认值）
 const props = defineProps({
@@ -37,7 +41,7 @@ const props = defineProps({
 });
 
 // 响应式数据
-const vncScreen = ref(null);
+const vncScreen = ref<HTMLDivElement>();
 const connected = ref(false);
 const connecting = ref(false);
 // 非响应式数据
@@ -56,7 +60,7 @@ const onChannelOpen = () => {
 };
 
 const onChannelMessage = (event: Event) => {
-  console.log(channel.identifier, '收到数据通道消息');
+  logger.debug(channel.identifier, '收到数据通道消息');
 };
 
 // 连接 VNC
@@ -74,14 +78,19 @@ const connect = () => {
         username: 'default',
         password: 'vncpassword',
         target: 'default'
-      },
+      }
     });
+    //
+
     // 事件监听
     rfb.addEventListener('connect', onConnect);
     rfb.addEventListener('disconnect', onDisconnect);
     rfb.addEventListener('credentialsrequired', onCredentialsRequired);
     rfb.addEventListener('securityfailure', onSecurityFailure);
     rfb.addEventListener('desktopname', onDesktopName);
+    // 剪贴板
+    const clipboard = new RFBClipboard();
+    clipboard.setRFBInstance(rfb);
   } catch (error) {
     console.error('VNC 连接失败:', error);
     connecting.value = false;

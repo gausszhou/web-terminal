@@ -28,8 +28,8 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { Frame, FrameType } from '@web-terminal/common';
-import { WebSocketConnection } from './WebSocketConnection';
-import { WebSocketDataChannel } from './WebSocketDataChannel';
+import { WebSocketConnection } from '@/modules/WebSocketConnection';
+import { WebSocketDataChannel } from '@/modules/WebSocketDataChannel';
 
 const props = defineProps({
   url: {

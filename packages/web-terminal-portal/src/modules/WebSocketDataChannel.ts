@@ -1,9 +1,8 @@
 import { Frame, FrameCodec, FrameType } from '@web-terminal/common';
 import { WebSocketConnection } from './WebSocketConnection';
-import loglevel from 'loglevel';
+import { getLogger } from 'loglevel';
 
-const logger = loglevel.getLogger('WebSocketDataChannel');
-
+const logger = getLogger('WebSocketDataChannel');
 logger.setLevel('debug');
 
 export class WebSocketDataChannel extends EventTarget implements WebSocket {
@@ -59,7 +58,6 @@ export class WebSocketDataChannel extends EventTarget implements WebSocket {
    *  业务不要使用这些属性
    */
   set onopen(callback: (ev: Event) => any) {
-    logger.debug('set open', callback);
     this._onopen = callback;
   }
 
@@ -80,9 +78,7 @@ export class WebSocketDataChannel extends EventTarget implements WebSocket {
   }
 
   set onmessage(callback: (ev: Event) => any) {
-    logger.debug('set message', callback);
     this._onmessage = ev => {
-      console.log('_onmessage in DataChannel');
       const event = new MessageEvent('message', { data: this.decode((ev as MessageEvent).data) });
       callback(event);
     };
