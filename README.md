@@ -2,7 +2,6 @@
 
 Web Terminal 和 Web VNC 技术调研
 
-
 ## 预览
 
 ![](https://www.gausszhou.top/static/data/github/web-terminal/terminal.png)
@@ -13,9 +12,12 @@ Web Terminal 和 Web VNC 技术调研
 
 ```bash
 docker run consol/ubuntu-xfce-vnc --help
+# macos-vnc
+docker run -d --name macos -p 5900:5900 -p 8006:8006 -e "VERSION=14" -e VNC_RESOLUTION=1024x768 --device=/dev/kvm --device=/dev/net/tun --cap-add NET_ADMIN -v "${PWD:-.}/macos:/storage" --stop-timeout 120 dockurr/macos
+# ubuntu-xfce-vnc
 # password vncpassword
 # resolution 1280x720
-docker run -d -p 5901:5901 -p 6901:6901 -e VNC_PW="vncpassword" -e VNC_RESOLUTION=1280x720 consol/ubuntu-xfce-vnc
+docker run -d --name ubuntu-xfce -p 5901:5901 -p 6901:6901 -e VNC_PW="vncpassword" -e VNC_RESOLUTION=1024x768 consol/ubuntu-xfce-vnc
 ```
 
 ## 开发
