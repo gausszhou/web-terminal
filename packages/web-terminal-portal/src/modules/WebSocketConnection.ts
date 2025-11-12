@@ -11,19 +11,19 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
   private dataChannels: Map<string, WebSocketDataChannel> = new Map();
   private dataChannelIdentifiers: Map<number, string> = new Map();
 
-  private keepAliveInterval: number = 0;
-  private _lastPongTime: number = 0;
+  private keepAliveInterval = 0;
+  private _lastPongTimestamp = 0;
   // 往返延迟
-  private _rtt: number = 0;
+  private _rtt = 0;
   // 上传和下载流量
-  private _uploadBytes: number = 0;
-  private _downloadBytes: number = 0;
+  private _upBytes = 0;
+  private _downBytes = 0;
   // 上行和下行网速(最近 5 s)
-  private _lastUploadBytes = 0;
-  private _lastDownloadBytes = 0;
-  private _upwardSpeed: number = 0;
-  private _downwardSpeed: number = 0;
-  private speedTimer: number = 0;
+  private _lastUpBytes = 0;
+  private _lastDownBytes = 0;
+  private _upSpeed = 0;
+  private _downSpeed = 0;
+  private speedTimer = 0;
 
   readonly CONNECTING = WebSocket.CONNECTING;
   readonly OPEN = WebSocket.OPEN;
@@ -66,10 +66,10 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
     this.identifier = FrameCodec.randomIdentifier();
     this.listenPong();
     this.speedTimer = setInterval(() => {
-      this._upwardSpeed = this._uploadBytes - this._lastUploadBytes;
-      this._downwardSpeed = this._downloadBytes - this._lastDownloadBytes;
-      this._lastUploadBytes = this._uploadBytes;
-      this._lastDownloadBytes = this._downloadBytes;
+      this._upSpeed = this._upBytes - this._lastUpBytes;
+      this._downSpeed = this._downBytes - this._lastDownBytes;
+      this._lastUpBytes = this._upBytes;
+      this._lastDownBytes = this._downBytes;
     }, 1000);
     logger.debug('创建 WebSocket 连接:', url, protocol);
   }
@@ -80,19 +80,19 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
   }
 
   get upBytes(): number {
-    return this._uploadBytes;
+    return this._upBytes;
   }
 
   get downBytes(): number {
-    return this._downloadBytes;
+    return this._downBytes;
   }
 
   get upSpeed(): number {
-    return this._upwardSpeed;
+    return this._upSpeed;
   }
 
   get downSpeed(): number {
-    return this._downwardSpeed;
+    return this._downSpeed;
   }
 
   get onopen(): ((this: WebSocket, ev: Event) => any) | null {
@@ -146,7 +146,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
   public send(data: string | ArrayBuffer) {
     const buff = this.encode(data);
     if (buff instanceof ArrayBuffer) {
-      this._uploadBytes += buff.byteLength;
+      this._upBytes += buff.byteLength;
     }
     this.ws.send(buff);
   }
@@ -190,6 +190,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
     }
     const frame = FrameCodec.create(opcode, this.identifier, data);
     const buffer = frame.toBuffer();
+    this._upBytes += buffer.byteLength;
     this.ws.send(buffer);
   }
 
@@ -210,7 +211,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
    */
   private _onMessage(ev: MessageEvent) {
     const frame = FrameCodec.decode(ev.data as ArrayBuffer);
-    this._downloadBytes += ev.data.byteLength;
+    this._downBytes += ev.data.byteLength;
     logger.debug(frame.identifier, FrameType[frame.type], frame.payloadLength);
     if (frame.identifier === this.identifier) {
       const event = new MessageEvent('message', { data: this.decode(frame) });
@@ -248,8 +249,8 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
 
   private _onPong(frame: Frame) {
     const pingTime = FrameCodec.buffer2number(frame.payload);
-    this._lastPongTime = Date.now();
-    this._rtt = this._lastPongTime - pingTime;
+    this._lastPongTimestamp = Date.now();
+    this._rtt = this._lastPongTimestamp - pingTime;
     const event = new Event('pong', {});
     this.dispatchEvent(event);
     this.getAllDataChannels().forEach(channel => {
@@ -260,7 +261,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
   private _startKeepAlive() {
     clearInterval(this.keepAliveInterval);
     this._ping();
-    this._lastPongTime = Date.now();
+    this._lastPongTimestamp = Date.now();
     this.keepAliveInterval = setInterval(() => {
       this._checkKeepAlive();
       this._ping();
@@ -271,7 +272,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
    * 检查是否超时
    */
   private _checkKeepAlive() {
-    const interval = Date.now() - this._lastPongTime;
+    const interval = Date.now() - this._lastPongTimestamp;
     if (interval > 3 * 5000) {
       const event = new Event('timeout', {});
       this.dispatchEvent(event);

@@ -1,8 +1,8 @@
 <template>
   <div class="network-info">
     <div class="network-speed">
-      <div>⬆️ {{ state.upSpeed }} Byte/s</div>
-      <div>⬇️ {{ state.downSpeed }} Byte/s</div>
+      <div>⬆️ {{ formatNetworkSpeed(state.upSpeed) }}</div>
+      <div>⬇️ {{ formatNetworkSpeed(state.downSpeed) }}</div>
     </div>
     <div class="network-state">
       <div class="network-status" :class="state.isConnected ? 'connected' : 'disconnected'">🌐 {{ state.isConnected ? '已连接' : '未连接' }}</div>
@@ -13,6 +13,7 @@
 
 <script lang="ts" setup>
 import { createNetworkInfo } from '@/modules/WebSocketConnection';
+import { formatNetworkSpeed } from '@/utils/network';
 import { onMounted, onUnmounted, reactive } from 'vue';
 
 const props = defineProps({
@@ -60,7 +61,7 @@ defineExpose({
 }
 
 .network-speed {
-  width: 120px;
+  width: 100px;
   overflow: hidden;
 }
 
