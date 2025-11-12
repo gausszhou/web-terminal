@@ -5,7 +5,7 @@
       <div class="button-container">
         <button class="button refresh-button" @click="refresh">刷新</button>
       </div>
-      <NetworkInfo :connection="connection"></NetworkInfo>
+      <NetworkInfo ref="networkRef" :connection="connection"></NetworkInfo>
     </div>
     <div v-if="!connected" class="connection-status">
       <Loading v-if="connecting" message="正在连接终端服务器..." />
@@ -38,6 +38,7 @@ const props = defineProps({
 });
 
 // 组件/元素引用
+const networkRef = ref<typeof NetworkInfo>();
 const terminalRef = ref<HTMLElement>();
 // 响应式数据
 const connected = ref(false);
@@ -101,18 +102,12 @@ const onConnectionTimeout = () => {
   connection.reconnect(props.url);
 };
 
-// ====== 刷新终端 ======
-
-const refresh = () => {
-  // term.write("\x1b[2J\x1b[0;0H");
-  terminal.reset();
-  channel._send(FrameType.TERMINAL_REFRESH, '');
-};
 
 const onChannelOpen = () => {
   channel._send(FrameType.TERMINAL_INIT, '');
   connected.value = true;
   connecting.value = false;
+    networkRef.value?.updateState();
 };
 
 const onChannelClose = () => {
@@ -147,6 +142,12 @@ const destroyWebSocket = () => {
   if (connection) {
     connection.close();
   }
+};
+
+// UI 交互
+const refresh = () => {
+  terminal.reset();
+  channel._send(FrameType.TERMINAL_REFRESH, '');
 };
 
 onMounted(() => {

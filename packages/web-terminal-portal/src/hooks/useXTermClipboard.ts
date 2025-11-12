@@ -1,5 +1,10 @@
 import { Terminal } from 'xterm';
 
+/**
+ * XTerm Copy/Paste support
+ * https://github.com/xtermjs/xterm.js/issues/2478
+ * @param terminal 
+ */
 export function useXTermClipboard(terminal: Terminal) {
   // 复制
   terminal.attachCustomKeyEventHandler(arg => {
@@ -13,17 +18,9 @@ export function useXTermClipboard(terminal: Terminal) {
     return true;
   });
 
-  // 粘贴
-  const paste = async () => {
-    const selection = await navigator.clipboard.readText();
-    if (selection) {
-      terminal.paste(selection);
-      return false;
-    }
-  };
   terminal.attachCustomKeyEventHandler(arg => {
     if (arg.ctrlKey && arg.code === 'KeyV' && arg.type === 'keydown') {
-      paste();
+      return false;
     }
     return true;
   });

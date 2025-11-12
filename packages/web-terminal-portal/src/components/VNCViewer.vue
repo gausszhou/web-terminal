@@ -5,7 +5,7 @@
       <NetworkInfo ref="networkRef" :connection="connection"></NetworkInfo>
     </div>
     <!-- VNC 显示区域 -->
-    <div ref="vncScreen" class="vnc-screen"></div>
+    <div ref="screenRef" class="vnc-screen"></div>
     <!-- 连接状态 -->
     <div v-if="!connected" class="connection-status">
       <Loading v-if="connecting" message="正在连接 VNC 服务器..." />
@@ -47,8 +47,8 @@ const props = defineProps({
 
 // 组件/元素引用
 const networkRef = ref<typeof NetworkInfo>();
+const screenRef = ref<HTMLDivElement>();
 // 响应式数据
-const vncScreen = ref<HTMLDivElement>();
 const connected = ref(false);
 const connecting = ref(false);
 // 非响应式数据
@@ -74,7 +74,7 @@ const onChannelMessage = (event: Event) => {
 
 // 连接 VNC
 const connect = () => {
-  if (!vncScreen.value) return;
+  if (!screenRef.value) return;
   connecting.value = true;
   connection = new WebSocketConnection(props.url);
   channel = connection.createDataChannel('vnc');
@@ -82,7 +82,7 @@ const connect = () => {
   channel.addEventListener('open', onChannelOpen);
   channel.addEventListener('message', onChannelMessage);
   try {
-    rfb = new RFB(vncScreen.value, channel, {
+    rfb = new RFB(screenRef.value, channel, {
       credentials: {
         username: 'default',
         password: 'vncpassword',
