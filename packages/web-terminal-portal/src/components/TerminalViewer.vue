@@ -107,7 +107,7 @@ const destroyTerminal = () => {
 
 // ====== WebSocket 事件处理 ======
 
-const onConnectionPong = () => {  
+const onConnectionPong = () => {
   latencyText.value = `延迟: ${connection.rtt}ms`;
 };
 
@@ -173,6 +173,10 @@ const destroyWebSocket = () => {
 onMounted(() => {
   initTerminal();
   initWebSocket();
+  window.addEventListener('beforeunload', () => {
+    destroyTerminal();
+    destroyWebSocket();
+  });
 });
 
 onUnmounted(() => {

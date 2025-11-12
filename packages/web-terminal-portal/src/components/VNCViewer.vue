@@ -19,7 +19,7 @@ import { FrameCodec, FrameType } from '@web-terminal/common';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { WebSocketConnection } from '@/modules/WebSocketConnection';
 import { WebSocketDataChannel } from '@/modules/WebSocketDataChannel';
-import { RFBClipboard } from '@/modules/RFBClipbaord';
+import { useRFBClipboard } from '@/hooks/useRFBClipbaord';
 import { getLogger } from 'loglevel';
 
 const logger = getLogger('VNCViewer');
@@ -46,6 +46,7 @@ const connected = ref(false);
 const connecting = ref(false);
 // 非响应式数据
 let rfb: NoVncClient;
+let rfbClipboardClear: () => void;
 let connection: WebSocketConnection;
 let channel: WebSocketDataChannel;
 
@@ -80,17 +81,15 @@ const connect = () => {
         target: 'default'
       }
     });
-    //
-
+    // 剪贴板
+    rfbClipboardClear = useRFBClipboard(rfb);
     // 事件监听
     rfb.addEventListener('connect', onConnect);
     rfb.addEventListener('disconnect', onDisconnect);
     rfb.addEventListener('credentialsrequired', onCredentialsRequired);
     rfb.addEventListener('securityfailure', onSecurityFailure);
     rfb.addEventListener('desktopname', onDesktopName);
-    // 剪贴板
-    const clipboard = new RFBClipboard();
-    clipboard.setRFBInstance(rfb);
+
   } catch (error) {
     console.error('VNC 连接失败:', error);
     connecting.value = false;
@@ -124,22 +123,12 @@ const onDesktopName = (event: CustomEvent) => {
   console.log('桌面名称:', event.detail.name);
 };
 
-// 发送 Ctrl+Alt+Del
-const sendCtrlAltDel = () => {
-  if (rfb && connected.value) {
-    rfb.sendCtrlAltDel();
-  }
-};
-
-// 组件挂载时连接
-onMounted(() => {
-  connect();
-});
-
-// 组件卸载时断开连接
-onUnmounted(() => {
+const dispose = () => {
   if (rfb) {
     rfb.disconnect();
+  }
+  if (rfbClipboardClear) {
+    rfbClipboardClear();
   }
   if (channel) {
     channel.close();
@@ -147,17 +136,19 @@ onUnmounted(() => {
   if (connection) {
     connection.close();
   }
+};
+
+// 组件挂载时连接
+onMounted(() => {
+  connect();
+  window.addEventListener('beforeunload', () => {
+    dispose();
+  });
 });
 
-// 暴露方法给父组件
-defineExpose({
-  sendCtrlAltDel,
-  reconnect: connect,
-  disconnect: () => {
-    if (rfb) {
-      rfb.disconnect();
-    }
-  }
+// 组件卸载时断开连接
+onUnmounted(() => {
+  dispose();
 });
 </script>
 
