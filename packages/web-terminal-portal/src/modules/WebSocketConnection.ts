@@ -13,12 +13,24 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
 
   private keepAliveInterval: number = 0;
   private _lastPongTime: number = 0;
+  // 往返延迟
   private _rtt: number = 0;
+  // 上传和下载流量
+  private _uploadBytes: number = 0;
+  private _downloadBytes: number = 0;
+  // 上行和下行网速(最近 5 s)
+  private _lastUploadBytes = 0;
+  private _lastDownloadBytes = 0;
+  private _upwardSpeed: number = 0;
+  private _downwardSpeed: number = 0;
+  private speedTimer: number = 0;
 
   readonly CONNECTING = WebSocket.CONNECTING;
   readonly OPEN = WebSocket.OPEN;
   readonly CLOSING = WebSocket.CLOSING;
   readonly CLOSED = WebSocket.CLOSED;
+
+  isConnected = false;
 
   set binaryType(type: BinaryType) {
     this.ws.binaryType = type;
@@ -50,14 +62,37 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
 
   constructor(url: string, protocol?: string) {
     super();
-    logger.debug('创建 WebSocket 连接:', url, protocol);
     this.ws = this.createWebSocket(url, protocol);
     this.identifier = FrameCodec.randomIdentifier();
-    this.listenPong()
+    this.listenPong();
+    this.speedTimer = setInterval(() => {
+      this._upwardSpeed = this._uploadBytes - this._lastUploadBytes;
+      this._downwardSpeed = this._downloadBytes - this._lastDownloadBytes;
+      this._lastUploadBytes = this._uploadBytes;
+      this._lastDownloadBytes = this._downloadBytes;
+    }, 1000);
+    logger.debug('创建 WebSocket 连接:', url, protocol);
   }
 
+  // 网络延迟和速度
   get rtt(): number {
     return this._rtt;
+  }
+
+  get upBytes(): number {
+    return this._uploadBytes;
+  }
+
+  get downBytes(): number {
+    return this._downloadBytes;
+  }
+
+  get upSpeed(): number {
+    return this._upwardSpeed;
+  }
+
+  get downSpeed(): number {
+    return this._downwardSpeed;
   }
 
   get onopen(): ((this: WebSocket, ev: Event) => any) | null {
@@ -94,14 +129,14 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
     this.ws.onerror = ev => {
       this._onError(ev);
       callback(ev);
-    }
+    };
   }
 
   set onclose(callback: (ev: CloseEvent) => any) {
     this.ws.onclose = ev => {
       this._onClose(ev);
       callback(ev);
-    }
+    };
   }
 
   /**
@@ -109,16 +144,19 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
    * @param data
    */
   public send(data: string | ArrayBuffer) {
-    const buff = this.encode(data)
+    const buff = this.encode(data);
+    if (buff instanceof ArrayBuffer) {
+      this._uploadBytes += buff.byteLength;
+    }
     this.ws.send(buff);
   }
 
   /**
    * 编码数据，默认不做处理
-   * @param data 
-   * @returns 
+   * @param data
+   * @returns
    */
-  public encode(data:  string | ArrayBuffer): string | ArrayBuffer {
+  public encode(data: string | ArrayBuffer): string | ArrayBuffer {
     return data;
   }
 
@@ -130,6 +168,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
     this.clearDataChannels();
     this._stopKeepAlive();
     this.ws.close();
+    clearInterval(this.speedTimer);
   }
 
   public reconnect(url: string, protocol?: string) {
@@ -150,10 +189,12 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
       throw new Error('WebSocket is not open');
     }
     const frame = FrameCodec.create(opcode, this.identifier, data);
-    this.ws.send(frame.toBuffer());
+    const buffer = frame.toBuffer();
+    this.ws.send(buffer);
   }
 
   private _onOpen(e: Event) {
+    this.isConnected = true;
     this._startKeepAlive();
     const event = new Event('open', {});
     this.dispatchEvent(event);
@@ -168,8 +209,9 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
    * @param ev 消息事件
    */
   private _onMessage(ev: MessageEvent) {
-    const frame = FrameCodec.decode(ev.data);
-    logger.debug(frame.identifier, FrameType[frame.type],frame.payloadLength);
+    const frame = FrameCodec.decode(ev.data as ArrayBuffer);
+    this._downloadBytes += ev.data.byteLength;
+    logger.debug(frame.identifier, FrameType[frame.type], frame.payloadLength);
     if (frame.identifier === this.identifier) {
       const event = new MessageEvent('message', { data: this.decode(frame) });
       this.dispatchEvent(event);
@@ -182,16 +224,18 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
       dataChannel.dispatchEvent(event);
       return event;
     }
-    return ev
+    return ev;
   }
 
   private _onError(ev: Event) {
+    this.isConnected = false;
     this.getAllDataChannels().forEach(channel => {
       channel._onclose(ev);
     });
   }
 
   private _onClose(ev: CloseEvent) {
+    this.isConnected = false;
     this._stopKeepAlive();
     this.getAllDataChannels().forEach(channel => {
       channel.dispatchEvent(ev);
@@ -253,6 +297,7 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
       }
     });
   }
+
   /**
    * 创建 WebSocket 实例
    * @param url WebSocket 服务器 URL
@@ -310,4 +355,15 @@ export class WebSocketConnection extends EventTarget implements WebSocket {
     this.dataChannels.clear();
     this.dataChannelIdentifiers.clear();
   }
+}
+
+export function createNetworkInfo() {
+  return {
+    rtt: 0,
+    upBytes: 0,
+    downBytes: 0,
+    upSpeed: 0,
+    downSpeed: 0,
+    isConnected: false
+  };
 }

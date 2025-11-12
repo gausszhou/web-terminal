@@ -1,5 +1,9 @@
 <template>
   <div class="vnc-container">
+    <div class="terminal-header">
+      <div class="terminal-title">Web Terminal</div>
+      <NetworkInfo ref="networkRef" :connection="connection"></NetworkInfo>
+    </div>
     <!-- VNC 显示区域 -->
     <div ref="vncScreen" class="vnc-screen"></div>
     <!-- 连接状态 -->
@@ -14,6 +18,7 @@
 
 <script lang="ts" setup>
 import Loading from '@/components/Loading.vue';
+import NetworkInfo from '@/components/NetworkInfo.vue';
 import { default as NoVncClient, default as RFB } from '@novnc/novnc/lib/rfb';
 import { FrameCodec, FrameType } from '@web-terminal/common';
 import { onMounted, onUnmounted, ref } from 'vue';
@@ -40,6 +45,8 @@ const props = defineProps({
   }
 });
 
+// 组件/元素引用
+const networkRef = ref<typeof NetworkInfo>();
 // 响应式数据
 const vncScreen = ref<HTMLDivElement>();
 const connected = ref(false);
@@ -58,6 +65,7 @@ const encode = (data: string | ArrayBuffer) => {
 const onChannelOpen = () => {
   console.log(channel.identifier, '数据通道打开');
   channel._send(FrameType.VNC_INIT, '');
+  networkRef.value?.updateState();
 };
 
 const onChannelMessage = (event: Event) => {
@@ -89,7 +97,6 @@ const connect = () => {
     rfb.addEventListener('credentialsrequired', onCredentialsRequired);
     rfb.addEventListener('securityfailure', onSecurityFailure);
     rfb.addEventListener('desktopname', onDesktopName);
-
   } catch (error) {
     console.error('VNC 连接失败:', error);
     connecting.value = false;
@@ -160,10 +167,27 @@ onUnmounted(() => {
   background: #000;
 }
 
+.terminal-header {
+  height: 40px;
+  background-color: #2d2d2d;
+  padding: 0px 15px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
 .vnc-screen {
   width: 100%;
-  height: 100%;
+  height: calc(100svh - 50px);
+  height: calc(100vh - 50px);
   min-height: 400px;
+}
+
+.terminal-title {
+  font-weight: bold;
+  color: #cccccc;
 }
 
 .connection-status {
@@ -175,7 +199,7 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.disconnected {
+.connection-status .disconnected {
   color: #ccc;
 }
 </style>

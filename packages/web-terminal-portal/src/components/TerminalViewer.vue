@@ -5,10 +5,7 @@
       <div class="button-container">
         <button class="button refresh-button" @click="refresh">刷新</button>
       </div>
-      <div class="terminal-status-container">
-        <div class="terminal-status" :class="statusClass">{{ statusText }}</div>
-        <div class="terminal-latency">{{ latencyText }}</div>
-      </div>
+      <NetworkInfo :connection="connection"></NetworkInfo>
     </div>
     <div v-if="!connected" class="connection-status">
       <Loading v-if="connecting" message="正在连接终端服务器..." />
@@ -24,12 +21,14 @@
 
 <script setup lang="ts">
 import Loading from '@/components/Loading.vue';
+import NetworkInfo from '@/components/NetworkInfo.vue';
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { Frame, FrameType } from '@web-terminal/common';
 import { WebSocketConnection } from '@/modules/WebSocketConnection';
 import { WebSocketDataChannel } from '@/modules/WebSocketDataChannel';
+import { useXTermClipboard } from '@/hooks/useXTermClipboard';
 
 const props = defineProps({
   url: {
@@ -38,13 +37,12 @@ const props = defineProps({
   }
 });
 
+// 组件/元素引用
+const terminalRef = ref<HTMLElement>();
+// 响应式数据
 const connected = ref(false);
 const connecting = ref(false);
-const terminalRef = ref<HTMLElement>();
-const statusText = ref('连接中...');
-const latencyText = ref('延迟：...ms');
-const statusClass = ref('');
-
+// 非响应式数据
 let terminal: Terminal;
 let fitAddon: FitAddon;
 let connection: WebSocketConnection;
@@ -53,14 +51,6 @@ let channel: WebSocketDataChannel;
 // ====== 终端事件处理 ======
 const onData = (data: string) => {
   channel._send(FrameType.TERMINAL_DATA, data);
-};
-
-const onPaste = (event: ClipboardEvent) => {
-  if (event.clipboardData) {
-    const text = event.clipboardData.getData('text');
-    console.log(text);
-    terminal.write(text);
-  }
 };
 
 const onResize = () => {
@@ -78,15 +68,15 @@ const initTerminal = () => {
     fontFamily: "Consolas, 'Courier New', monospace",
     cursorBlink: true
   });
+  // 复制
+  useXTermClipboard(terminal)
 
   fitAddon = new FitAddon();
   terminal.loadAddon(fitAddon);
-
   // 监听终端输入
   terminal.onData(onData);
 
   if (terminalRef.value) {
-    terminalRef.value.addEventListener('paste', onPaste);
     terminal.open(terminalRef.value);
     setTimeout(() => {
       fitAddon.fit();
@@ -99,22 +89,15 @@ const destroyTerminal = () => {
   if (terminal) {
     terminal.dispose();
   }
-  if (terminalRef.value) {
-    terminalRef.value.removeEventListener('paste', onPaste);
-  }
   window.removeEventListener('resize', onResize);
 };
 
 // ====== WebSocket 事件处理 ======
 
-const onConnectionPong = () => {
-  latencyText.value = `延迟: ${connection.rtt}ms`;
-};
+const onConnectionPong = () => {};
 
 const onConnectionTimeout = () => {
   console.log('连接超时');
-  statusText.value = '连接超时';
-  statusClass.value = 'disconnected';
   connection.reconnect(props.url);
 };
 
@@ -127,8 +110,6 @@ const refresh = () => {
 };
 
 const onChannelOpen = () => {
-  statusText.value = '已连接';
-  statusClass.value = 'connected';
   channel._send(FrameType.TERMINAL_INIT, '');
   connected.value = true;
   connecting.value = false;
@@ -136,8 +117,6 @@ const onChannelOpen = () => {
 
 const onChannelClose = () => {
   console.log('数据通道已关闭');
-  statusText.value = '已断开';
-  statusClass.value = 'disconnected';
 };
 
 const onChannelMessage = (event: Event) => {
@@ -197,13 +176,13 @@ onUnmounted(() => {
 }
 
 .terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   height: 40px;
   background-color: #2d2d2d;
   padding: 0px 15px;
   border-bottom: 1px solid #333;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: 10px;
 }
 
@@ -236,26 +215,9 @@ onUnmounted(() => {
   border: none;
   background-color: transparent;
 }
+
 .button:hover {
   background-color: #555;
-}
-
-.terminal-status-container {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.terminal-status {
-  font-size: 12px;
-}
-
-.terminal-status.connected {
-  color: #4caf50;
-}
-
-.terminal-status.disconnected {
-  color: #f44336;
 }
 
 .terminal-latency {
